@@ -4,6 +4,7 @@ import { HealthModule } from './health/health.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { CoachModule } from './coach/coach.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { UsersModule } from './users/users.module';
     SupabaseModule,
     AuthModule,
     UsersModule,
+    CoachModule,
   ],
   controllers: [],
   providers: [],
