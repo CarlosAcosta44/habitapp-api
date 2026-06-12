@@ -9,9 +9,9 @@ export class UsersService {
   async getProfile(userId: string) {
     const { data, error } = await this.supabaseService
       .getClient()
-      .from('user_profiles')
+      .from('perfiles_usuarios_api')
       .select('*')
-      .eq('id', userId)
+      .eq('idusuario', userId)
       .single();
 
     if (error || !data) {
