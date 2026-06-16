@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export enum UserRole {
   USER = 'usuario',
@@ -7,42 +7,51 @@ export enum UserRole {
   ADMIN = 'administrador',
 }
 
+export enum RoleName {
+  USER = 'Usuario',
+  TRAINER = 'Entrenador',
+  ADMIN = 'Administrador',
+}
+
 export class UpdateUserProfileDto {
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ example: 'Carlos' })
   @IsString()
   @IsOptional()
-  full_name?: string;
+  @MaxLength(45)
+  nombre?: string;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ example: 'Acosta' })
   @IsString()
   @IsOptional()
-  avatar_url?: string;
+  @MaxLength(45)
+  apellido?: string;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ example: 'https://example.com/avatar.png' })
   @IsString()
   @IsOptional()
-  timezone?: string;
+  @MaxLength(200)
+  fotoperfil?: string;
 }
 
 export class UserProfileDto {
-  @ApiProperty()
-  id: string;
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  idusuario: string;
 
-  @ApiProperty()
-  full_name: string;
+  @ApiProperty({ example: 'Carlos' })
+  nombre: string;
 
-  @ApiProperty()
-  avatar_url: string;
+  @ApiProperty({ example: 'Acosta' })
+  apellido: string;
 
-  @ApiProperty()
-  timezone: string;
+  @ApiPropertyOptional({ example: 'https://example.com/avatar.png' })
+  fotoperfil: string | null;
 
-  @ApiProperty({ enum: UserRole })
-  role: UserRole;
+  @ApiProperty({ example: 120 })
+  puntostotales: number;
 
-  @ApiProperty()
-  total_points: number;
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440001' })
+  idrol: string;
 
-  @ApiProperty()
-  created_at: Date;
+  @ApiProperty({ enum: RoleName, example: RoleName.USER })
+  nombrerol: string;
 }
