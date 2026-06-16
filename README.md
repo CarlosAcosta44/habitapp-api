@@ -36,6 +36,18 @@ El backend de HabitApp está construido con [NestJS](https://nestjs.com/) y sirv
    npm run start:dev
    ```
 
+## Migraciones Supabase
+
+El esquema de base de datos está versionado en `supabase/migrations/`. Ver guía completa en [`docs/migraciones-supabase.md`](docs/migraciones-supabase.md).
+
+```bash
+supabase login
+supabase link --project-ref <tu-project-ref>
+supabase db push
+```
+
+**Rama GitFlow asociada:** `feature/be-supabase-migrations` (ISSUE-010)
+
 ## API Docs
 
 Cuando el servidor local está en ejecución, puedes ver y probar todos los endpoints disponibles accediendo a:
