@@ -38,3 +38,7 @@ lerna-debug.log*
 .env
 .env.test
 .env.production
+
+# Supabase CLI
+supabase/.temp
+supabase/.branches

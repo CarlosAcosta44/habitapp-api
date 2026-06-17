@@ -1,0 +1,267 @@
+openapi: 3.0.0
+paths:
+  /api/v1/health:
+    get:
+      description: Endpoint público que confirma que el servidor está en línea.
+      operationId: HealthController_checkHealth
+      parameters: []
+      responses:
+        "200":
+          description: La API está operativa.
+          content:
+            application/json:
+              schema:
+                example:
+                  status: ok
+                  timestamp: 2026-06-16T12:00:00.000Z
+        "500":
+          description: Error interno del servidor.
+      summary: Verificar estado de la API
+      tags:
+        - health
+  /api/v1/users/me:
+    get:
+      description: Devuelve el perfil completo del usuario cuyo JWT se envía en el header.
+      operationId: UsersController_getMe
+      parameters: []
+      responses:
+        "200":
+          description: Perfil del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileDto"
+        "401":
+          description: Token ausente o inválido.
+        "500":
+          description: Error interno del servidor.
+      security: &a1
+        - supabase-jwt: []
+      summary: Obtener perfil del usuario autenticado
+      tags: &a2
+        - users
+    patch:
+      description: Permite actualizar nombre, apellido y foto de perfil del usuario
+        autenticado.
+      operationId: UsersController_updateMe
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserProfileDto"
+      responses:
+        "200":
+          description: Perfil actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileDto"
+        "401":
+          description: Token ausente o inválido.
+        "422":
+          description: Datos de entrada inválidos (validación).
+        "500":
+          description: Error interno del servidor.
+      security: *a1
+      summary: Actualizar perfil del usuario autenticado
+      tags: *a2
+  /api/v1/users:
+    get:
+      description: Solo accesible para usuarios con rol administrador.
+      operationId: UsersController_listUsers
+      parameters: []
+      responses:
+        "200":
+          description: Lista de perfiles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfileDto"
+        "401":
+          description: Token ausente o inválido.
+        "403":
+          description: Rol insuficiente. Se requiere administrador.
+        "500":
+          description: Error interno del servidor.
+      security: *a1
+      summary: Listar todos los usuarios
+      tags: *a2
+  /api/v1/users/{id}/role:
+    patch:
+      description: Solo accesible para administradores. Modifica el rol de otro usuario.
+      operationId: UsersController_updateUserRole
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID del usuario objetivo
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleDto"
+      responses:
+        "200":
+          description: Rol actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileDto"
+        "401":
+          description: Token ausente o inválido.
+        "403":
+          description: Rol insuficiente. Se requiere administrador.
+        "422":
+          description: Datos de entrada inválidos (validación).
+        "500":
+          description: Error interno del servidor.
+      security: *a1
+      summary: Cambiar rol de un usuario
+      tags: *a2
+  /api/v1/coach/clients:
+    get:
+      description: Devuelve la lista de usuarios asignados al entrenador autenticado.
+        Solo accesible para roles entrenador y administrador.
+      operationId: CoachController_getClients
+      parameters: []
+      responses:
+        "200":
+          description: Lista de clientes asignados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientDto"
+        "401":
+          description: Token ausente o inválido.
+        "403":
+          description: Rol insuficiente. Se requiere entrenador o administrador.
+        "500":
+          description: Error interno del servidor.
+      security:
+        - supabase-jwt: []
+      summary: Obtener clientes asignados al entrenador
+      tags:
+        - coach
+info:
+  title: HabitApp API
+  description: API backend de HabitApp. Expone endpoints de autenticación vía
+    Supabase JWT, gestión de perfiles de usuario, operaciones de entrenador
+    (coach) y health check. Todos los endpoints protegidos requieren un Bearer
+    token de Supabase.
+  version: 1.0.0
+  contact:
+    name: Carlos Acosta — Tech Lead
+    url: ""
+    email: carlos@habitapp.io
+  license:
+    name: UNLICENSED
+    url: ""
+tags: []
+servers:
+  - url: http://localhost:4000
+    description: Desarrollo local
+  - url: https://habitapp-api.azurewebsites.net
+    description: Producción
+components:
+  securitySchemes:
+    supabase-jwt:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: "Token JWT emitido por Supabase Auth. Incluir en el header:
+        Authorization: Bearer <token>"
+  schemas:
+    UserProfileDto:
+      type: object
+      properties:
+        idusuario:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+          description: UUID del usuario generado por Supabase Auth.
+        nombre:
+          type: string
+          example: Carlos
+          description: Nombre del usuario.
+        apellido:
+          type: string
+          example: Acosta
+          description: Apellido del usuario.
+        fotoperfil:
+          type: object
+          example: https://example.com/avatar.png
+          description: URL de la foto de perfil. Puede ser null si no se configuró.
+        puntostotales:
+          type: number
+          example: 120
+          description: Puntos totales acumulados por el usuario en la aplicación.
+        idrol:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440001
+          description: UUID del rol asignado al usuario en la tabla gestion.roles.
+        nombrerol:
+          type: string
+          enum:
+            - Usuario
+            - Entrenador
+            - Administrador
+          example: Usuario
+          description: "Nombre legible del rol: Usuario, Entrenador o Administrador."
+      required:
+        - idusuario
+        - nombre
+        - apellido
+        - puntostotales
+        - idrol
+        - nombrerol
+    UpdateUserProfileDto:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: Carlos
+          description: Primer nombre del usuario (máx. 45 caracteres).
+        apellido:
+          type: string
+          example: Acosta
+          description: Apellido del usuario (máx. 45 caracteres).
+        fotoperfil:
+          type: string
+          example: https://example.com/avatar.png
+          description: URL pública de la foto de perfil (máx. 200 caracteres).
+    UpdateUserRoleDto:
+      type: object
+      properties:
+        nombrerol:
+          type: string
+          enum:
+            - Usuario
+            - Entrenador
+            - Administrador
+          example: Entrenador
+          description: Nombre del rol en gestion.roles
+      required:
+        - nombrerol
+    ClientDto:
+      type: object
+      properties:
+        assigned_at:
+          format: date-time
+          type: string
+          example: 2026-06-01T10:00:00.000Z
+          description: Fecha y hora en que el cliente fue asignado al entrenador.
+        client:
+          description: Perfil completo del usuario asignado como cliente.
+          allOf:
+            - $ref: "#/components/schemas/UserProfileDto"
+      required:
+        - assigned_at
+        - client
