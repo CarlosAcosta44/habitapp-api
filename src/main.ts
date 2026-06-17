@@ -29,16 +29,19 @@ async function bootstrap() {
     .setTitle('HabitApp API')
     .setDescription(
       'API backend de HabitApp. Expone endpoints de autenticación vía Supabase JWT, ' +
-      'gestión de perfiles de usuario, operaciones de entrenador (coach) y health check. ' +
-      'Todos los endpoints protegidos requieren un Bearer token de Supabase.'
+        'gestión de perfiles de usuario, operaciones de entrenador (coach) y health check. ' +
+        'Todos los endpoints protegidos requieren un Bearer token de Supabase.',
     )
     .setVersion('1.0.0')
     .setContact('Carlos Acosta — Tech Lead', '', 'carlos@habitapp.io')
     .setLicense('UNLICENSED', '')
-    .addServer(`http://localhost:${process.env.PORT || 4000}`, 'Desarrollo local')
+    .addServer(
+      `http://localhost:${process.env.PORT || 4000}`,
+      'Desarrollo local',
+    )
     .addServer(
       process.env.BACKEND_URL || 'https://habitapp-api.azurewebsites.net',
-      'Producción'
+      'Producción',
     )
     .addBearerAuth(
       {
