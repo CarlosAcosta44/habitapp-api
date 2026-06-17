@@ -1,5 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { CoachService } from './coach.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -23,12 +28,18 @@ export class CoachController {
       'Devuelve la lista de usuarios asignados al entrenador autenticado. ' +
       'Solo accesible para roles entrenador y administrador.',
   })
-  @ApiResponse({ status: 200, description: 'Lista de clientes asignados.', type: [ClientDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de clientes asignados.',
+    type: [ClientDto],
+  })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
-  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere entrenador o administrador.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Rol insuficiente. Se requiere entrenador o administrador.',
+  })
   @ApiResponse({ status: 500, description: 'Error interno del servidor.' })
   async getClients(@CurrentUser() user: any) {
     return this.coachService.getClients(user.userId);
   }
 }
-

@@ -13,13 +13,15 @@ export class CoachService {
       .eq('trainer_id', trainerId);
 
     if (error) {
-      throw new InternalServerErrorException(`Failed to fetch clients: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Failed to fetch clients: ${error.message}`,
+      );
     }
 
     // Map the Supabase response to the ClientDto structure
     return data.map((item: any) => ({
       assigned_at: item.assigned_at,
-      client: item.user_profiles
+      client: item.user_profiles,
     }));
   }
 }

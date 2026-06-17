@@ -5,6 +5,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CoachModule } from './coach/coach.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CoachModule } from './coach/coach.module';
     AuthModule,
     UsersModule,
     CoachModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [],

@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -8,17 +13,19 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token no proporcionado');
     }
 
     const token = authHeader.split(' ')[1];
-    
+
     // Al usar getUser() delegamos la validación del token asimétrico directamente a Supabase.
     // Esto es mucho más seguro y a prueba de fallos porque además verifica que no haya sido revocado.
-    const { data, error } = await this.supabaseService.getClient().auth.getUser(token);
-    
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .auth.getUser(token);
+
     if (error || !data?.user) {
       throw new UnauthorizedException('Token inválido o expirado');
     }
