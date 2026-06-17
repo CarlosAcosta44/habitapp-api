@@ -1,7 +1,18 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from './roles.decorator';
 import { UserRole } from '../users/dto/user-profile.dto';
+
+interface RequestWithUser {
+  user?: {
+    role?: UserRole;
+  };
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -14,11 +25,17 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!requiredRoles) {
-      return true; // No hay restricción de roles
+      return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
-    // user es inyectado por JwtAuthGuard (contiene userId, email, role)
-    return requiredRoles.some((role) => user?.role === role);
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+
+    if (!requiredRoles.some((role) => request.user?.role === role)) {
+      throw new ForbiddenException(
+        'No tienes permisos para acceder a este recurso',
+      );
+    }
+
+    return true;
   }
 }
