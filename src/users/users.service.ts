@@ -31,7 +31,9 @@ export class UsersService {
       .single();
 
     if (error || !data) {
-      throw new NotFoundException('User profile not found or could not be updated');
+      throw new NotFoundException(
+        'User profile not found or could not be updated',
+      );
     }
 
     return data;
