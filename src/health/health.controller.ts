@@ -23,4 +23,14 @@ export class HealthController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Get('debug-sentry')
+  @ApiOperation({
+    summary: 'Probar integración de Sentry',
+    description: 'Lanza un error intencional para verificar la captura en Sentry.',
+  })
+  @ApiResponse({ status: 500, description: 'Error intencional lanzado.' })
+  debugSentry() {
+    throw new Error('Sentry Backend Integration Test Error');
+  }
 }

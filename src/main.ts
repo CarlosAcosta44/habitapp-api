@@ -1,3 +1,11 @@
+import * as Sentry from '@sentry/nestjs';
+
+// Initialize Sentry before the application starts
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || 'https://placeholder@o0.ingest.sentry.io/0',
+  tracesSampleRate: 1.0,
+});
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
