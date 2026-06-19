@@ -10,10 +10,14 @@ export class SupabaseService implements OnModuleInit {
 
   onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseKey = this.configService.get<string>(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    );
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase credentials are required in environment variables.');
+      throw new Error(
+        'Supabase credentials are required in environment variables.',
+      );
     }
 
     this.supabase = createClient(supabaseUrl, supabaseKey, {
