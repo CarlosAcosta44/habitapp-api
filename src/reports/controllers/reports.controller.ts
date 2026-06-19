@@ -1,4 +1,4 @@
-import { Controller, Get, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param, UseInterceptors } from '@nestjs/common';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { ReportsService } from '../services/reports.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -16,5 +16,13 @@ export class ReportsController {
   @ApiResponse({ status: 200, description: 'Ranking obtenido exitosamente.' })
   async getRanking() {
     return this.reportsService.getRanking();
+  }
+
+  @Get('user/:userId')
+  @CacheTTL(30000) // 30 segundos de caché para el resumen del usuario
+  @ApiOperation({ summary: 'Obtener el resumen consolidado de un usuario' })
+  @ApiResponse({ status: 200, description: 'Resumen obtenido exitosamente.' })
+  async getUserSummary(@Param('userId') userId: string) {
+    return this.reportsService.getUserSummary(userId);
   }
 }
