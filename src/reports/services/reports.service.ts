@@ -25,4 +25,22 @@ export class ReportsService {
       );
     }
   }
+
+  async getUserSummary(userId: string) {
+    try {
+      const { data, error } = await this.supabaseService
+        .getClient()
+        .rpc('get_user_summary', { p_idusuario: userId });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error: any) {
+      throw new InternalServerErrorException(
+        'Error al obtener el resumen del usuario: ' + error.message,
+      );
+    }
+  }
 }
