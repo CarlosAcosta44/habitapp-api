@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { CoachModule } from './coach/coach.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ReportsModule } from './reports/reports.module';
     CoachModule,
     NotificationsModule,
     ReportsModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [
