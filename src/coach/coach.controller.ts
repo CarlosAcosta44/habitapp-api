@@ -106,4 +106,31 @@ export class CoachController {
   ) {
     return this.coachService.deleteRoutine(user.userId, id);
   }
+
+  @Post('clients/:clientId/routines/:routineId/assign')
+  @ApiOperation({
+    summary: 'Asignar una rutina a un cliente',
+    description:
+      'Copia los hábitos de la rutina seleccionada y los inserta en el perfil del cliente como hábitos personales activos. El entrenador debe tener asignado al cliente.',
+  })
+  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente (pupilo)' })
+  @ApiParam({ name: 'routineId', type: String, description: 'UUID de la rutina a asignar' })
+  @ApiResponse({
+    status: 201,
+    description: 'Rutina asignada exitosamente.',
+  })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
+  @ApiResponse({ status: 403, description: 'Rol insuficiente.' })
+  @ApiResponse({ status: 404, description: 'Cliente no asignado al entrenador o rutina no encontrada.' })
+  async assignRoutine(
+    @CurrentUser() user: any,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+    @Param('routineId', ParseUUIDPipe) routineId: string,
+  ) {
+    return this.coachService.assignRoutineToClient(
+      user.userId,
+      clientId,
+      routineId,
+    );
+  }
 }
