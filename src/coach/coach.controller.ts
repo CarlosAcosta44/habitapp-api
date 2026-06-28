@@ -133,4 +133,22 @@ export class CoachController {
       routineId,
     );
   }
+
+  @Get('clients/:clientId/progress')
+  @ApiOperation({
+    summary: 'Obtener el progreso de un cliente',
+    description:
+      'Retorna el resumen de progreso (rachas, estadísticas) de un cliente asignado. La información es delegada internamente al motor de reportes del sistema.',
+  })
+  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente (pupilo)' })
+  @ApiResponse({ status: 200, description: 'Progreso del cliente obtenido exitosamente.' })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
+  @ApiResponse({ status: 403, description: 'Rol insuficiente.' })
+  @ApiResponse({ status: 404, description: 'Cliente no asignado al entrenador.' })
+  async getClientProgress(
+    @CurrentUser() user: any,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+  ) {
+    return this.coachService.getClientProgress(user.userId, clientId);
+  }
 }
