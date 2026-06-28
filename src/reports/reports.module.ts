@@ -13,5 +13,6 @@ import { SupabaseModule } from '../supabase/supabase.module';
   ],
   controllers: [ReportsController],
   providers: [ReportsService],
+  exports: [ReportsService],
 })
 export class ReportsModule {}

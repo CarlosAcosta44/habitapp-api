@@ -6,10 +6,14 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { UpdateRoutineDto } from './dto/update-routine.dto';
+import { ReportsService } from '../reports/services/reports.service';
 
 @Injectable()
 export class CoachService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly reportsService: ReportsService,
+  ) {}
 
   async getClients(trainerId: string) {
     const { data, error } = await this.supabaseService
@@ -249,5 +253,26 @@ export class CoachService {
       message: 'Routine assigned successfully',
       habitsAssigned: habitsToInsert.length,
     };
+  }
+
+  async getClientProgress(trainerId: string, clientId: string) {
+    const client = this.supabaseService.getClient();
+
+    // 1. Validar que el clientId sea pupilo del trainerId
+    const { data: relationship, error: relError } = await client
+      .from('user_trainers')
+      .select('assigned_at')
+      .eq('trainer_id', trainerId)
+      .eq('user_id', clientId)
+      .single();
+
+    if (relError || !relationship) {
+      throw new NotFoundException(
+        `Client ${clientId} is not assigned to trainer ${trainerId}`,
+      );
+    }
+
+    // 2. Delegar la recopilación de datos al ReportsService
+    return this.reportsService.getUserSummary(clientId);
   }
 }
