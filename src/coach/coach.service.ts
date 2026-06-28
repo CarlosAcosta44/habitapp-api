@@ -224,7 +224,7 @@ export class CoachService {
 
     // 3. Mapear los hábitos de la rutina hacia la estructura de la tabla habits del cliente
     // El category_id quedará como null implícitamente al no enviarlo.
-    const habitsToInsert = routine.routine_habits.map((routineHabit) => ({
+    const habitsToInsert = routine.routine_habits.map((routineHabit: any) => ({
       user_id: clientId,
       name: routineHabit.habit_name,
       icon: routineHabit.habit_icon || '⭐',
