@@ -190,8 +190,23 @@ export class CoachService {
     const trainerId = await this.getTrainerId(userId);
     await this.getRoutineById(userId, routineId);
 
-    const { error } = await this.supabaseService
-      .getClient()
+    const client = this.supabaseService.getClient();
+
+    // 1. Eliminar asignaciones de usuarios a esta rutina (cascada manual)
+    const { error: deleteAssignsError } = await client
+      .schema('seguimiento')
+      .from('usuario_rutina')
+      .delete()
+      .eq('idrutina', routineId);
+
+    if (deleteAssignsError) {
+      throw new InternalServerErrorException(
+        `Failed to delete routine assignments: ${deleteAssignsError.message}`,
+      );
+    }
+
+    // 2. Eliminar la rutina
+    const { error } = await client
       .schema('seguimiento')
       .from('rutinas')
       .delete()
