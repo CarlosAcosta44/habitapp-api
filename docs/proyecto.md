@@ -38,7 +38,7 @@ Actúa como el **portero de seguridad** principal del edificio.
 
 ### 2. Módulo de Usuarios (`UsersModule`)
 Maneja toda la información personal y de perfil.
-- **¿Qué hace?** Expone el endpoint principal (`GET /api/v1/users/profile`). Una vez que el `AuthModule` confirma tu identidad, este módulo va a la base de datos a traer tu información de perfil.
+- **¿Qué hace?** Expone endpoints de perfil (`GET /api/v1/users/me`, `PATCH /api/v1/users/me`), listado administrativo (`GET /api/v1/users`) y cambio de rol (`PATCH /api/v1/users/:id/role`). Usa la vista `perfiles_usuarios_api` y el esquema `gestion.usuarios`.
 
 ### 3. Módulo de Entrenadores (`CoachModule`)
 Una característica clave de HabitApp es el seguimiento a los usuarios por parte de expertos.
