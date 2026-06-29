@@ -18,9 +18,10 @@ export class CoachService {
   async getClients(trainerId: string) {
     const { data, error } = await this.supabaseService
       .getClient()
-      .from('user_trainers')
-      .select('assigned_at, user_profiles(*)')
-      .eq('trainer_id', trainerId);
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('fechainicio, idusuario')
+      .eq('identrenador', trainerId);
 
     if (error) {
       throw new InternalServerErrorException(
@@ -28,10 +29,33 @@ export class CoachService {
       );
     }
 
-    return data.map((item: any) => ({
-      assigned_at: item.assigned_at,
-      client: item.user_profiles,
-    }));
+    // Para evitar problemas de joins entre esquemas, obtenemos los perfiles en paralelo
+    const clientsWithProfiles = await Promise.all(
+      data.map(async (item: any) => {
+        const { data: profile } = await this.supabaseService
+          .getClient()
+          .schema('gestion')
+          .from('usuarios')
+          .select('*, roles(nombrerol)')
+          .eq('idusuario', item.idusuario)
+          .single();
+          
+        return {
+          assigned_at: item.fechainicio,
+          client: profile ? {
+            idusuario: profile.idusuario,
+            nombre: profile.nombre,
+            apellido: profile.apellido,
+            fotoperfil: profile.fotoperfil,
+            puntostotales: profile.puntostotales,
+            idrol: profile.idrol,
+            nombrerol: profile?.roles?.nombrerol || 'Usuario',
+          } : null,
+        };
+      })
+    );
+
+    return clientsWithProfiles;
   }
 
   async createRoutine(trainerId: string, dto: CreateRoutineDto) {
@@ -39,11 +63,14 @@ export class CoachService {
 
     // 1. Crear la rutina principal
     const { data: routine, error: routineError } = await client
-      .from('routines')
+      .schema('seguimiento')
+      .from('rutinas')
       .insert({
-        trainer_id: trainerId,
-        name: dto.name,
-        description: dto.description,
+        identrenador: trainerId,
+        tipo: 'General', // Asignamos tipo por defecto ya que el DTO asume menos campos
+        descripcion: dto.description || '',
+        nivel: 'Principiante', // Asignamos por defecto
+        objetivo: dto.name, // Usamos el nombre de la rutina como objetivo
       })
       .select()
       .single();
@@ -56,38 +83,22 @@ export class CoachService {
 
     // 2. Crear los hábitos asociados en la misma operación si están presentes
     if (dto.habits && dto.habits.length > 0) {
-      const habitsToInsert = dto.habits.map((habit) => ({
-        routine_id: routine.id,
-        habit_name: habit.habit_name,
-        habit_icon: habit.habit_icon || '⭐',
-        frequency: habit.frequency || 'diaria',
-        order_index: habit.order_index || 0,
-      }));
-
-      const { error: habitsError } = await client
-        .from('routine_habits')
-        .insert(habitsToInsert);
-
-      if (habitsError) {
-        // Compensación manual: Si fallan los hábitos, deshacemos la creación de la rutina
-        // En un entorno de BD con RPC esto sería un solo bloque transaccional SQL
-        await client.from('routines').delete().eq('id', routine.id);
-        throw new InternalServerErrorException(
-          `Failed to insert routine habits: ${habitsError.message}`,
-        );
-      }
+      // TODO: Implementar la inserción de hábitos de rutina
+      // Actualmente la base de datos no tiene una tabla 'seguimiento.rutina_habitos'.
+      // Esta sección queda pausada hasta que el equipo de BD actualice el esquema DDL agregando la tabla intermedia.
+      console.warn('Asignación detallada de hábitos pausada por falta de tabla rutina_habitos');
     }
 
-    return this.getRoutineById(trainerId, routine.id);
+    return this.getRoutineById(trainerId, routine.idrutina);
   }
 
   async getRoutines(trainerId: string) {
     const { data, error } = await this.supabaseService
       .getClient()
-      .from('routines')
-      .select('*, routine_habits(*)')
-      .eq('trainer_id', trainerId)
-      .order('created_at', { ascending: false });
+      .schema('seguimiento')
+      .from('rutinas')
+      .select('*')
+      .eq('identrenador', trainerId);
 
     if (error) {
       throw new InternalServerErrorException(
@@ -95,23 +106,36 @@ export class CoachService {
       );
     }
 
-    return data;
+    return data.map((r: any) => ({
+      ...r,
+      name: r.objetivo, // Parseamos al DTO
+      description: r.descripcion,
+      id: r.idrutina,
+      routine_habits: [], // TODO: Agregar consulta a rutina_habitos cuando exista en BD
+    }));
   }
 
   async getRoutineById(trainerId: string, routineId: string) {
     const { data, error } = await this.supabaseService
       .getClient()
-      .from('routines')
-      .select('*, routine_habits(*)')
-      .eq('id', routineId)
-      .eq('trainer_id', trainerId)
+      .schema('seguimiento')
+      .from('rutinas')
+      .select('*')
+      .eq('idrutina', routineId)
+      .eq('identrenador', trainerId)
       .single();
 
     if (error) {
       throw new NotFoundException(`Routine not found or not owned by trainer`);
     }
 
-    return data;
+    return {
+      ...data,
+      name: data.objetivo,
+      description: data.descripcion,
+      id: data.idrutina,
+      routine_habits: [], // TODO: Agregar consulta a rutina_habitos cuando exista en BD
+    };
   }
 
   async updateRoutine(
@@ -124,15 +148,16 @@ export class CoachService {
 
     const client = this.supabaseService.getClient();
     const updateData: any = {};
-    if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.name !== undefined) updateData.objetivo = dto.name; // Parseamos al esquema real
+    if (dto.description !== undefined) updateData.descripcion = dto.description;
 
     if (Object.keys(updateData).length > 0) {
       const { error } = await client
-        .from('routines')
+        .schema('seguimiento')
+        .from('rutinas')
         .update(updateData)
-        .eq('id', routineId)
-        .eq('trainer_id', trainerId);
+        .eq('idrutina', routineId)
+        .eq('identrenador', trainerId);
 
       if (error) {
         throw new InternalServerErrorException(
@@ -143,36 +168,10 @@ export class CoachService {
 
     // Actualización de hábitos: Eliminamos y reinsertamos (Estrategia sencilla para sync array)
     if (dto.habits) {
-      const { error: deleteError } = await client
-        .from('routine_habits')
-        .delete()
-        .eq('routine_id', routineId);
-
-      if (deleteError) {
-        throw new InternalServerErrorException(
-          `Failed to reset routine habits: ${deleteError.message}`,
-        );
-      }
-
-      if (dto.habits.length > 0) {
-        const habitsToInsert = dto.habits.map((habit) => ({
-          routine_id: routineId,
-          habit_name: habit.habit_name,
-          habit_icon: habit.habit_icon || '⭐',
-          frequency: habit.frequency || 'diaria',
-          order_index: habit.order_index || 0,
-        }));
-
-        const { error: insertError } = await client
-          .from('routine_habits')
-          .insert(habitsToInsert);
-
-        if (insertError) {
-          throw new InternalServerErrorException(
-            `Failed to insert new routine habits: ${insertError.message}`,
-          );
-        }
-      }
+      // TODO: Implementar la actualización de hábitos de rutina
+      // Actualmente la base de datos no tiene una tabla 'seguimiento.rutina_habitos'.
+      // Esta sección queda pausada hasta que el equipo de BD actualice el esquema DDL agregando la tabla intermedia.
+      console.warn('Actualización de hábitos pausada por falta de tabla rutina_habitos');
     }
 
     return this.getRoutineById(trainerId, routineId);
@@ -184,10 +183,11 @@ export class CoachService {
 
     const { error } = await this.supabaseService
       .getClient()
-      .from('routines')
+      .schema('seguimiento')
+      .from('rutinas')
       .delete()
-      .eq('id', routineId)
-      .eq('trainer_id', trainerId);
+      .eq('idrutina', routineId)
+      .eq('identrenador', trainerId);
 
     if (error) {
       throw new InternalServerErrorException(
@@ -205,10 +205,11 @@ export class CoachService {
 
     // 1. Validar que el clientId sea pupilo del trainerId
     const { data: relationship, error: relError } = await client
-      .from('user_trainers')
-      .select('assigned_at')
-      .eq('trainer_id', trainerId)
-      .eq('user_id', clientId)
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('fechainicio')
+      .eq('identrenador', trainerId)
+      .eq('idusuario', clientId)
       .single();
 
     if (relError || !relationship) {
@@ -220,38 +221,36 @@ export class CoachService {
     // 2. Validar existencia y propiedad de la rutina, y obtener los hábitos
     const routine = await this.getRoutineById(trainerId, routineId);
 
-    if (!routine.routine_habits || routine.routine_habits.length === 0) {
-      throw new InternalServerErrorException(
-        'Cannot assign an empty routine (no habits found)',
-      );
-    }
+    // TODO: Cuando exista la tabla de `seguimiento.rutina_habitos`, reactivar esta validación.
+    // if (!routine.routine_habits || routine.routine_habits.length === 0) {
+    //   throw new InternalServerErrorException(
+    //     'Cannot assign an empty routine (no habits found)',
+    //   );
+    // }
 
+    // TODO: Clonación profunda pausada temporalmente hasta que se resuelva la tabla intermedia.
     // 3. Mapear los hábitos de la rutina hacia la estructura de la tabla habits del cliente
-    // El category_id quedará como null implícitamente al no enviarlo.
-    const habitsToInsert = routine.routine_habits.map((routineHabit: any) => ({
-      user_id: clientId,
-      name: routineHabit.habit_name,
-      icon: routineHabit.habit_icon || '⭐',
-      frequency: routineHabit.frequency || 'diaria',
-      is_active: true,
-      description: `Asignado por el entrenador (Rutina: ${routine.name})`,
-    }));
-
     // 4. Inserción masiva en la tabla habits
-    // Si falla, el Supabase client JS fallará la operación completa del insert.
-    const { error: insertError } = await client
-      .from('habits')
-      .insert(habitsToInsert);
+    
+    // Por ahora, solo asignamos la rutina al usuario (tabla intermedia seguimiento.usuario_rutina)
+    const { error: assignError } = await client
+      .schema('seguimiento')
+      .from('usuario_rutina')
+      .insert({
+        idusuario: clientId,
+        idrutina: routineId,
+        estado: 'Activo'
+      });
 
-    if (insertError) {
+    if (assignError) {
       throw new InternalServerErrorException(
-        `Failed to assign routine habits to client: ${insertError.message}`,
+        `Failed to assign routine to client: ${assignError.message}`,
       );
     }
 
     return {
-      message: 'Routine assigned successfully',
-      habitsAssigned: habitsToInsert.length,
+      message: 'Routine assigned successfully to client',
+      habitsAssigned: 0,
     };
   }
 
@@ -260,10 +259,11 @@ export class CoachService {
 
     // 1. Validar que el clientId sea pupilo del trainerId
     const { data: relationship, error: relError } = await client
-      .from('user_trainers')
-      .select('assigned_at')
-      .eq('trainer_id', trainerId)
-      .eq('user_id', clientId)
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('fechainicio')
+      .eq('identrenador', trainerId)
+      .eq('idusuario', clientId)
       .single();
 
     if (relError || !relationship) {

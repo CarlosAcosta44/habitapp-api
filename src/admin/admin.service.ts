@@ -12,7 +12,7 @@ export class AdminService {
   async deleteForum(forumId: string) {
     const client = this.supabaseService.getClient();
 
-    // Validar existencia
+    // Validar existencia del foro
     const { data: forum, error: fetchError } = await client
       .schema('comunidad')
       .from('foros')
@@ -24,7 +24,51 @@ export class AdminService {
       throw new NotFoundException(`Forum with ID ${forumId} not found`);
     }
 
-    // Eliminar. Supabase maneja el borrado en cascada
+    // Buscar todos los comentarios del foro
+    const { data: comments, error: fetchCommentsError } = await client
+      .schema('comunidad')
+      .from('comentarios')
+      .select('idcomentario')
+      .eq('idforo', forumId);
+
+    if (fetchCommentsError) {
+      throw new InternalServerErrorException(
+        `Failed to fetch forum comments: ${fetchCommentsError.message}`,
+      );
+    }
+
+    // Borrado manual en cascada
+    if (comments && comments.length > 0) {
+      const commentIds = comments.map((c: any) => c.idcomentario);
+
+      // Eliminar reacciones de todos los comentarios de este foro
+      const { error: deleteReactionsError } = await client
+        .schema('comunidad')
+        .from('reacciones')
+        .delete()
+        .in('idcomentario', commentIds);
+
+      if (deleteReactionsError) {
+        throw new InternalServerErrorException(
+          `Failed to delete reactions for comments: ${deleteReactionsError.message}`,
+        );
+      }
+
+      // Eliminar todos los comentarios
+      const { error: deleteCommentsError } = await client
+        .schema('comunidad')
+        .from('comentarios')
+        .delete()
+        .in('idcomentario', commentIds);
+
+      if (deleteCommentsError) {
+        throw new InternalServerErrorException(
+          `Failed to delete comments: ${deleteCommentsError.message}`,
+        );
+      }
+    }
+
+    // Eliminar el foro
     const { error: deleteError } = await client
       .schema('comunidad')
       .from('foros')
