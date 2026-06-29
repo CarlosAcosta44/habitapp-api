@@ -9,34 +9,35 @@ import { SupabaseService } from '../supabase/supabase.service';
 export class AdminService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async deleteForumThread(threadId: string) {
+  async deleteForum(forumId: string) {
     const client = this.supabaseService.getClient();
 
     // Validar existencia
-    const { data: thread, error: fetchError } = await client
-      .from('forum_threads')
-      .select('id')
-      .eq('id', threadId)
+    const { data: forum, error: fetchError } = await client
+      .schema('comunidad')
+      .from('foros')
+      .select('idforo')
+      .eq('idforo', forumId)
       .single();
 
-    if (fetchError || !thread) {
-      throw new NotFoundException(`Thread with ID ${threadId} not found`);
+    if (fetchError || !forum) {
+      throw new NotFoundException(`Forum with ID ${forumId} not found`);
     }
 
-    // Eliminar. Supabase (PostgreSQL) maneja el borrado en cascada de los comentarios 
-    // gracias a "ON DELETE CASCADE" en forum_comments.thread_id.
+    // Eliminar. Supabase maneja el borrado en cascada
     const { error: deleteError } = await client
-      .from('forum_threads')
+      .schema('comunidad')
+      .from('foros')
       .delete()
-      .eq('id', threadId);
+      .eq('idforo', forumId);
 
     if (deleteError) {
       throw new InternalServerErrorException(
-        `Failed to delete thread: ${deleteError.message}`,
+        `Failed to delete forum: ${deleteError.message}`,
       );
     }
 
-    return { message: 'Thread and its comments deleted successfully' };
+    return { message: 'Forum and its comments deleted successfully' };
   }
 
   async deleteForumComment(commentId: string) {
@@ -44,9 +45,10 @@ export class AdminService {
 
     // Validar existencia
     const { data: comment, error: fetchError } = await client
-      .from('forum_comments')
-      .select('id')
-      .eq('id', commentId)
+      .schema('comunidad')
+      .from('comentarios')
+      .select('idcomentario')
+      .eq('idcomentario', commentId)
       .single();
 
     if (fetchError || !comment) {
@@ -55,9 +57,10 @@ export class AdminService {
 
     // Eliminar comentario
     const { error: deleteError } = await client
-      .from('forum_comments')
+      .schema('comunidad')
+      .from('comentarios')
       .delete()
-      .eq('id', commentId);
+      .eq('idcomentario', commentId);
 
     if (deleteError) {
       throw new InternalServerErrorException(

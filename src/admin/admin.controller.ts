@@ -95,26 +95,26 @@ export class AdminController {
     return this.usersService.updateUserRole(user.userId, targetUserId, dto);
   }
 
-  @Delete('forum/threads/:id')
+  @Delete('forum/:id')
   @ApiOperation({
-    summary: 'Eliminar un hilo del foro',
+    summary: 'Eliminar un foro',
     description:
-      'Elimina un hilo del foro y todos sus comentarios en cascada. Solo accesible para administradores.',
+      'Elimina un foro completo y todos sus comentarios en cascada. Solo accesible para administradores.',
   })
-  @ApiParam({ name: 'id', type: String, description: 'UUID del hilo' })
-  @ApiResponse({ status: 200, description: 'Hilo y comentarios eliminados exitosamente.' })
+  @ApiParam({ name: 'id', type: String, description: 'UUID del foro' })
+  @ApiResponse({ status: 200, description: 'Foro y comentarios eliminados exitosamente.' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
   @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere administrador.' })
-  @ApiResponse({ status: 404, description: 'Hilo no encontrado.' })
-  async deleteForumThread(@Param('id', ParseUUIDPipe) id: string) {
-    return this.adminService.deleteForumThread(id);
+  @ApiResponse({ status: 404, description: 'Foro no encontrado.' })
+  async deleteForum(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.deleteForum(id);
   }
 
   @Delete('forum/comments/:id')
   @ApiOperation({
     summary: 'Eliminar un comentario del foro',
     description:
-      'Elimina un comentario específico de un hilo. Solo accesible para administradores.',
+      'Elimina un comentario específico de un foro. Solo accesible para administradores.',
   })
   @ApiParam({ name: 'id', type: String, description: 'UUID del comentario' })
   @ApiResponse({ status: 200, description: 'Comentario eliminado exitosamente.' })
