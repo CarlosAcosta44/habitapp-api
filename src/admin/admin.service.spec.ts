@@ -14,6 +14,7 @@ describe('AdminService', () => {
   let mockEq: jest.Mock;
   let mockSingle: jest.Mock;
   let mockFrom: jest.Mock;
+  let mockSchema: jest.Mock;
   let mockChain: any;
 
   beforeEach(async () => {
@@ -37,6 +38,7 @@ describe('AdminService', () => {
     mockSingle.mockReturnValue(mockChain);
 
     mockFrom = jest.fn().mockReturnValue(mockChain);
+    mockSchema = jest.fn().mockReturnValue({ from: mockFrom });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -45,6 +47,7 @@ describe('AdminService', () => {
           provide: SupabaseService,
           useValue: {
             getClient: jest.fn().mockReturnValue({
+              schema: mockSchema,
               from: mockFrom,
             }),
           },
@@ -59,10 +62,10 @@ describe('AdminService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('deleteForumThread', () => {
-    const threadId = 'uuid-1';
+  describe('deleteForum', () => {
+    const forumId = 'uuid-1';
 
-    it('should throw NotFoundException if thread does not exist', async () => {
+    it('should throw NotFoundException if forum does not exist', async () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
@@ -74,7 +77,7 @@ describe('AdminService', () => {
         }),
       }));
 
-      await expect(service.deleteForumThread(threadId)).rejects.toThrow(
+      await expect(service.deleteForum(forumId)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -85,7 +88,7 @@ describe('AdminService', () => {
           eq: () => ({
             single: jest
               .fn()
-              .mockResolvedValue({ data: { id: threadId }, error: null }),
+              .mockResolvedValue({ data: { idforo: forumId }, error: null }),
           }),
         }),
         delete: () => ({
@@ -95,18 +98,18 @@ describe('AdminService', () => {
         }),
       }));
 
-      await expect(service.deleteForumThread(threadId)).rejects.toThrow(
+      await expect(service.deleteForum(forumId)).rejects.toThrow(
         InternalServerErrorException,
       );
     });
 
-    it('should delete thread successfully', async () => {
+    it('should delete forum successfully', async () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
             single: jest
               .fn()
-              .mockResolvedValue({ data: { id: threadId }, error: null }),
+              .mockResolvedValue({ data: { idforo: forumId }, error: null }),
           }),
         }),
         delete: () => ({
@@ -114,9 +117,9 @@ describe('AdminService', () => {
         }),
       }));
 
-      const result = await service.deleteForumThread(threadId);
+      const result = await service.deleteForum(forumId);
       expect(result).toEqual({
-        message: 'Thread and its comments deleted successfully',
+        message: 'Forum and its comments deleted successfully',
       });
     });
   });
@@ -147,7 +150,7 @@ describe('AdminService', () => {
           eq: () => ({
             single: jest
               .fn()
-              .mockResolvedValue({ data: { id: commentId }, error: null }),
+              .mockResolvedValue({ data: { idcomentario: commentId }, error: null }),
           }),
         }),
         delete: () => ({
