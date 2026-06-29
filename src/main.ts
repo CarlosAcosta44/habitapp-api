@@ -65,12 +65,18 @@ async function bootstrap() {
       },
       'supabase-jwt',
     )
+    .addTag('auth', 'Endpoints de autenticación y tokens')
+    .addTag('admin', 'Endpoints exclusivos para administradores')
+    .addTag('users', 'Gestión de perfiles de usuario')
+    .addTag('coach', 'Operaciones de entrenadores (asignación, rutinas)')
+    .addTag('reports', 'Reportes y estadísticas')
+    .addTag('notifications', 'Gestión de notificaciones del sistema')
+    .addTag('health', 'Verificación de estado de la API')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
-      tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
   });
