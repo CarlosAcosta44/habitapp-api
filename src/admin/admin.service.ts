@@ -37,7 +37,33 @@ export class AdminService {
       );
     }
 
-    // Borrado manual en cascada
+    // Eliminar admins del foro
+    const { error: deleteAdminsError } = await client
+      .schema('comunidad')
+      .from('foro_administrador')
+      .delete()
+      .eq('idforo', forumId);
+
+    if (deleteAdminsError) {
+      throw new InternalServerErrorException(
+        `Failed to delete forum admins: ${deleteAdminsError.message}`,
+      );
+    }
+
+    // Eliminar suscripciones al foro
+    const { error: deleteSubsError } = await client
+      .schema('comunidad')
+      .from('usuario_foro')
+      .delete()
+      .eq('idforo', forumId);
+
+    if (deleteSubsError) {
+      throw new InternalServerErrorException(
+        `Failed to delete forum subscriptions: ${deleteSubsError.message}`,
+      );
+    }
+
+    // Borrado manual en cascada de comentarios
     if (comments && comments.length > 0) {
       const commentIds = comments.map((c: any) => c.idcomentario);
 
