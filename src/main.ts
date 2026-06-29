@@ -47,14 +47,6 @@ async function bootstrap() {
     .setVersion('1.0.0')
     .setContact('Carlos Acosta — Tech Lead', '', 'carlos@habitapp.io')
     .setLicense('UNLICENSED', '')
-    .addServer(
-      `http://localhost:${process.env.PORT || 4000}`,
-      'Desarrollo local',
-    )
-    .addServer(
-      process.env.BACKEND_URL || 'https://habitapp-api.azurewebsites.net',
-      'Producción',
-    )
     .addBearerAuth(
       {
         type: 'http',
