@@ -39,7 +39,8 @@ export class ReportsService {
         .eq('idusuario', userId)
         .single();
 
-      if (profileError) throw new Error(`Profile error: ${profileError.message}`);
+      if (profileError)
+        throw new Error(`Profile error: ${profileError.message}`);
 
       // 2. Obtener número de hábitos activos
       const { count: activeHabits, error: habitsError } = await client

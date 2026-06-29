@@ -25,7 +25,9 @@ export class CoachService {
       .single();
 
     if (error || !data) {
-      throw new NotFoundException('Perfil de entrenador no encontrado para este usuario');
+      throw new NotFoundException(
+        'Perfil de entrenador no encontrado para este usuario',
+      );
     }
     return data.identrenador;
   }
@@ -54,20 +56,22 @@ export class CoachService {
           .select('*, roles(nombrerol)')
           .eq('idusuario', item.idusuario)
           .single();
-          
+
         return {
           assigned_at: item.fechainicio,
-          client: profile ? {
-            idusuario: profile.idusuario,
-            nombre: profile.nombre,
-            apellido: profile.apellido,
-            fotoperfil: profile.fotoperfil,
-            puntostotales: profile.puntostotales,
-            idrol: profile.idrol,
-            nombrerol: profile?.roles?.nombrerol || 'Usuario',
-          } : null,
+          client: profile
+            ? {
+                idusuario: profile.idusuario,
+                nombre: profile.nombre,
+                apellido: profile.apellido,
+                fotoperfil: profile.fotoperfil,
+                puntostotales: profile.puntostotales,
+                idrol: profile.idrol,
+                nombrerol: profile?.roles?.nombrerol || 'Usuario',
+              }
+            : null,
         };
-      })
+      }),
     );
 
     return clientsWithProfiles;
@@ -97,7 +101,9 @@ export class CoachService {
     }
 
     if (dto.habits && dto.habits.length > 0) {
-      console.warn('Asignación detallada de hábitos pausada por falta de tabla rutina_habitos');
+      console.warn(
+        'Asignación detallada de hábitos pausada por falta de tabla rutina_habitos',
+      );
     }
 
     return this.getRoutineById(userId, routine.idrutina);
@@ -180,7 +186,9 @@ export class CoachService {
     }
 
     if (dto.habits) {
-      console.warn('Actualización de hábitos pausada por falta de tabla rutina_habitos');
+      console.warn(
+        'Actualización de hábitos pausada por falta de tabla rutina_habitos',
+      );
     }
 
     return this.getRoutineById(userId, routineId);
@@ -250,7 +258,7 @@ export class CoachService {
       .insert({
         idusuario: clientId,
         idrutina: routineId,
-        estado: 'Activo'
+        estado: 'Activo',
       });
 
     if (assignError) {

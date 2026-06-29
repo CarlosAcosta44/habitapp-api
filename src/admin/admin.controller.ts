@@ -102,9 +102,15 @@ export class AdminController {
       'Elimina un foro completo y todos sus comentarios en cascada. Solo accesible para administradores.',
   })
   @ApiParam({ name: 'id', type: String, description: 'UUID del foro' })
-  @ApiResponse({ status: 200, description: 'Foro y comentarios eliminados exitosamente.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Foro y comentarios eliminados exitosamente.',
+  })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
-  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere administrador.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Rol insuficiente. Se requiere administrador.',
+  })
   @ApiResponse({ status: 404, description: 'Foro no encontrado.' })
   async deleteForum(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.deleteForum(id);
@@ -117,9 +123,15 @@ export class AdminController {
       'Elimina un comentario específico de un foro. Solo accesible para administradores.',
   })
   @ApiParam({ name: 'id', type: String, description: 'UUID del comentario' })
-  @ApiResponse({ status: 200, description: 'Comentario eliminado exitosamente.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Comentario eliminado exitosamente.',
+  })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
-  @ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere administrador.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Rol insuficiente. Se requiere administrador.',
+  })
   @ApiResponse({ status: 404, description: 'Comentario no encontrado.' })
   async deleteForumComment(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.deleteForumComment(id);

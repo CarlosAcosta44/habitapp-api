@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminService } from './admin.service';
 import { SupabaseService } from '../supabase/supabase.service';
-import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -63,43 +66,58 @@ describe('AdminService', () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
-            single: jest.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } })
-          })
-        })
+            single: jest.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Not found' },
+            }),
+          }),
+        }),
       }));
-      
-      await expect(service.deleteForumThread(threadId)).rejects.toThrow(NotFoundException);
+
+      await expect(service.deleteForumThread(threadId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw InternalServerErrorException if delete fails', async () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
-            single: jest.fn().mockResolvedValue({ data: { id: threadId }, error: null })
-          })
+            single: jest
+              .fn()
+              .mockResolvedValue({ data: { id: threadId }, error: null }),
+          }),
         }),
         delete: () => ({
-          eq: jest.fn().mockResolvedValue({ data: null, error: { message: 'DB Error' } })
-        })
+          eq: jest
+            .fn()
+            .mockResolvedValue({ data: null, error: { message: 'DB Error' } }),
+        }),
       }));
 
-      await expect(service.deleteForumThread(threadId)).rejects.toThrow(InternalServerErrorException);
+      await expect(service.deleteForumThread(threadId)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
 
     it('should delete thread successfully', async () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
-            single: jest.fn().mockResolvedValue({ data: { id: threadId }, error: null })
-          })
+            single: jest
+              .fn()
+              .mockResolvedValue({ data: { id: threadId }, error: null }),
+          }),
         }),
         delete: () => ({
-          eq: jest.fn().mockResolvedValue({ data: null, error: null })
-        })
+          eq: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }),
       }));
 
       const result = await service.deleteForumThread(threadId);
-      expect(result).toEqual({ message: 'Thread and its comments deleted successfully' });
+      expect(result).toEqual({
+        message: 'Thread and its comments deleted successfully',
+      });
     });
   });
 
@@ -110,24 +128,31 @@ describe('AdminService', () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
-            single: jest.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } })
-          })
-        })
+            single: jest.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Not found' },
+            }),
+          }),
+        }),
       }));
-      
-      await expect(service.deleteForumComment(commentId)).rejects.toThrow(NotFoundException);
+
+      await expect(service.deleteForumComment(commentId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should delete comment successfully', async () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
-            single: jest.fn().mockResolvedValue({ data: { id: commentId }, error: null })
-          })
+            single: jest
+              .fn()
+              .mockResolvedValue({ data: { id: commentId }, error: null }),
+          }),
         }),
         delete: () => ({
-          eq: jest.fn().mockResolvedValue({ data: null, error: null })
-        })
+          eq: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }),
       }));
 
       const result = await service.deleteForumComment(commentId);
