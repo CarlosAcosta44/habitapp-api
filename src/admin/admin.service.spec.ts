@@ -148,9 +148,10 @@ describe('AdminService', () => {
       mockFrom.mockImplementation(() => ({
         select: () => ({
           eq: () => ({
-            single: jest
-              .fn()
-              .mockResolvedValue({ data: { idcomentario: commentId }, error: null }),
+            single: jest.fn().mockResolvedValue({
+              data: { idcomentario: commentId },
+              error: null,
+            }),
           }),
         }),
         delete: () => ({

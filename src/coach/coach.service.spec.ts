@@ -2,10 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CoachService } from './coach.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { ReportsService } from '../reports/services/reports.service';
-import {
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 describe('CoachService', () => {
   let service: CoachService;
@@ -99,9 +96,9 @@ describe('CoachService', () => {
         error: { message: 'Not related' },
       });
 
-      await expect(
-        service.getClientProgress(userId, clientId),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getClientProgress(userId, clientId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return progress if client belongs to coach', async () => {
