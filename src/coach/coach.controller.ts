@@ -58,10 +58,7 @@ export class CoachController {
   @Post('routines')
   @ApiOperation({ summary: 'Crear una rutina con hábitos asociados' })
   @ApiResponse({ status: 201, description: 'Rutina creada exitosamente.' })
-  async createRoutine(
-    @CurrentUser() user: any,
-    @Body() dto: CreateRoutineDto,
-  ) {
+  async createRoutine(@CurrentUser() user: any, @Body() dto: CreateRoutineDto) {
     return this.coachService.createRoutine(user.userId, dto);
   }
 
@@ -113,15 +110,26 @@ export class CoachController {
     description:
       'Copia los hábitos de la rutina seleccionada y los inserta en el perfil del cliente como hábitos personales activos. El entrenador debe tener asignado al cliente.',
   })
-  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente (pupilo)' })
-  @ApiParam({ name: 'routineId', type: String, description: 'UUID de la rutina a asignar' })
+  @ApiParam({
+    name: 'clientId',
+    type: String,
+    description: 'UUID del cliente (pupilo)',
+  })
+  @ApiParam({
+    name: 'routineId',
+    type: String,
+    description: 'UUID de la rutina a asignar',
+  })
   @ApiResponse({
     status: 201,
     description: 'Rutina asignada exitosamente.',
   })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
   @ApiResponse({ status: 403, description: 'Rol insuficiente.' })
-  @ApiResponse({ status: 404, description: 'Cliente no asignado al entrenador o rutina no encontrada.' })
+  @ApiResponse({
+    status: 404,
+    description: 'Cliente no asignado al entrenador o rutina no encontrada.',
+  })
   async assignRoutine(
     @CurrentUser() user: any,
     @Param('clientId', ParseUUIDPipe) clientId: string,
@@ -140,11 +148,21 @@ export class CoachController {
     description:
       'Retorna el resumen de progreso (rachas, estadísticas) de un cliente asignado. La información es delegada internamente al motor de reportes del sistema.',
   })
-  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente (pupilo)' })
-  @ApiResponse({ status: 200, description: 'Progreso del cliente obtenido exitosamente.' })
+  @ApiParam({
+    name: 'clientId',
+    type: String,
+    description: 'UUID del cliente (pupilo)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Progreso del cliente obtenido exitosamente.',
+  })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
   @ApiResponse({ status: 403, description: 'Rol insuficiente.' })
-  @ApiResponse({ status: 404, description: 'Cliente no asignado al entrenador.' })
+  @ApiResponse({
+    status: 404,
+    description: 'Cliente no asignado al entrenador.',
+  })
   async getClientProgress(
     @CurrentUser() user: any,
     @Param('clientId', ParseUUIDPipe) clientId: string,

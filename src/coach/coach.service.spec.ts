@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CoachService } from './coach.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { ReportsService } from '../reports/services/reports.service';
-import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 describe('CoachService', () => {
   let service: CoachService;
@@ -83,14 +86,22 @@ describe('CoachService', () => {
 
     it('should throw NotFoundException if client is not assigned to coach', async () => {
       // Setup the mock for the relationship query to return empty or error
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'Not related' } });
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Not related' },
+      });
 
-      await expect(service.getClientProgress(trainerId, clientId)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getClientProgress(trainerId, clientId),
+      ).rejects.toThrow(NotFoundException);
       expect(mockFrom).toHaveBeenCalledWith('user_trainers');
     });
 
     it('should return progress if client belongs to coach', async () => {
-      mockSingle.mockResolvedValueOnce({ data: { assigned_at: 'date' }, error: null });
+      mockSingle.mockResolvedValueOnce({
+        data: { assigned_at: 'date' },
+        error: null,
+      });
 
       const result = await service.getClientProgress(trainerId, clientId);
       expect(result).toEqual({ total: 100 });
@@ -105,33 +116,57 @@ describe('CoachService', () => {
 
     it('should throw NotFoundException if client is not assigned', async () => {
       // 1st query: check relationship
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'err' } });
-      
-      await expect(service.assignRoutineToClient(trainerId, clientId, routineId)).rejects.toThrow(NotFoundException);
+      mockSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'err' },
+      });
+
+      await expect(
+        service.assignRoutineToClient(trainerId, clientId, routineId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw InternalServerErrorException if routine has no habits', async () => {
       // 1st query: check relationship
-      mockSingle.mockResolvedValueOnce({ data: { assigned_at: 'date' }, error: null });
-      
-      // 2nd query: get routine by id inside `getRoutineById`
-      mockSingle.mockResolvedValueOnce({ data: { id: routineId, routine_habits: [] }, error: null });
+      mockSingle.mockResolvedValueOnce({
+        data: { assigned_at: 'date' },
+        error: null,
+      });
 
-      await expect(service.assignRoutineToClient(trainerId, clientId, routineId)).rejects.toThrow(InternalServerErrorException);
+      // 2nd query: get routine by id inside `getRoutineById`
+      mockSingle.mockResolvedValueOnce({
+        data: { id: routineId, routine_habits: [] },
+        error: null,
+      });
+
+      await expect(
+        service.assignRoutineToClient(trainerId, clientId, routineId),
+      ).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should assign routine habits successfully', async () => {
       // 1st query: check relationship
-      mockSingle.mockResolvedValueOnce({ data: { assigned_at: 'date' }, error: null });
+      mockSingle.mockResolvedValueOnce({
+        data: { assigned_at: 'date' },
+        error: null,
+      });
       // 2nd query: get routine by id
-      mockSingle.mockResolvedValueOnce({ 
-        data: { id: routineId, name: 'Rutina', routine_habits: [{ habit_name: 'Correr' }] }, 
-        error: null 
+      mockSingle.mockResolvedValueOnce({
+        data: {
+          id: routineId,
+          name: 'Rutina',
+          routine_habits: [{ habit_name: 'Correr' }],
+        },
+        error: null,
       });
       // 3rd query: insert into habits
       mockInsert.mockResolvedValueOnce({ error: null });
 
-      const res = await service.assignRoutineToClient(trainerId, clientId, routineId);
+      const res = await service.assignRoutineToClient(
+        trainerId,
+        clientId,
+        routineId,
+      );
       expect(res.message).toBe('Routine assigned successfully');
       expect(res.habitsAssigned).toBe(1);
       expect(mockFrom).toHaveBeenCalledWith('habits');
@@ -148,7 +183,9 @@ describe('CoachService', () => {
           return {
             insert: jest.fn().mockReturnValue({
               select: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({ data: { id: 'r1' }, error: null }),
+                single: jest
+                  .fn()
+                  .mockResolvedValue({ data: { id: 'r1' }, error: null }),
               }),
             }),
             delete: mockDelete,
@@ -156,7 +193,9 @@ describe('CoachService', () => {
         }
         if (table === 'routine_habits') {
           return {
-            insert: jest.fn().mockResolvedValue({ error: { message: 'Insert failed' } }),
+            insert: jest
+              .fn()
+              .mockResolvedValue({ error: { message: 'Insert failed' } }),
           };
         }
         return mockChain;
@@ -166,8 +205,12 @@ describe('CoachService', () => {
         eq: jest.fn().mockResolvedValue({ error: null }),
       });
 
-      await expect(service.createRoutine(trainerId, { name: 'Test', habits: [{ habit_name: 'H1' }] }))
-        .rejects.toThrow(InternalServerErrorException);
+      await expect(
+        service.createRoutine(trainerId, {
+          name: 'Test',
+          habits: [{ habit_name: 'H1' }],
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });

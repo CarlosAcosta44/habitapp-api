@@ -27,7 +27,8 @@ export class HealthController {
   @Get('debug-sentry')
   @ApiOperation({
     summary: 'Probar integración de Sentry',
-    description: 'Lanza un error intencional para verificar la captura en Sentry.',
+    description:
+      'Lanza un error intencional para verificar la captura en Sentry.',
   })
   @ApiResponse({ status: 500, description: 'Error intencional lanzado.' })
   debugSentry() {

@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 
@@ -24,13 +28,17 @@ export class AuthService {
   }
 
   async login(dto: AuthCredentialsDto) {
-    const { data, error } = await this.supabaseService.getClient().auth.signInWithPassword({
-      email: dto.email,
-      password: dto.password,
-    });
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .auth.signInWithPassword({
+        email: dto.email,
+        password: dto.password,
+      });
 
     if (error) {
-      throw new UnauthorizedException('Credenciales inválidas: ' + error.message);
+      throw new UnauthorizedException(
+        'Credenciales inválidas: ' + error.message,
+      );
     }
 
     return {

@@ -14,25 +14,35 @@ export class UsersRepository {
   async findProfileById(userId: string): Promise<UserProfileRow> {
     const { data, error } = await this.supabaseService
       .getClient()
-      .from('perfiles_usuarios_api')
-      .select('*')
+      .schema('gestion')
+      .from('usuarios')
+      .select('*, roles(nombrerol)')
       .eq('idusuario', userId)
-      .single<UserProfileRow>();
+      .single<any>();
 
     if (error || !data) {
       throw new NotFoundException('Perfil de usuario no encontrado');
     }
 
-    return data;
+    return {
+      idusuario: data.idusuario,
+      nombre: data.nombre,
+      apellido: data.apellido,
+      fotoperfil: data.fotoperfil,
+      puntostotales: data.puntostotales,
+      idrol: data.idrol,
+      nombrerol: data.roles?.nombrerol || 'Usuario',
+    };
   }
 
   async findAllProfiles(): Promise<UserProfileRow[]> {
     const { data, error } = await this.supabaseService
       .getClient()
-      .from('perfiles_usuarios_api')
-      .select('*')
+      .schema('gestion')
+      .from('usuarios')
+      .select('*, roles(nombrerol)')
       .order('nombre', { ascending: true })
-      .returns<UserProfileRow[]>();
+      .returns<any[]>();
 
     if (error) {
       throw new InternalServerErrorException(
@@ -40,7 +50,15 @@ export class UsersRepository {
       );
     }
 
-    return data ?? [];
+    return (data ?? []).map((u: any) => ({
+      idusuario: u.idusuario,
+      nombre: u.nombre,
+      apellido: u.apellido,
+      fotoperfil: u.fotoperfil,
+      puntostotales: u.puntostotales,
+      idrol: u.idrol,
+      nombrerol: u.roles?.nombrerol || 'Usuario',
+    }));
   }
 
   async updateProfile(

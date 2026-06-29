@@ -23,7 +23,11 @@ export class CreateRoutineHabitDto {
   @IsNotEmpty()
   habit_name: string;
 
-  @ApiProperty({ description: 'Icono del hábito (emoji)', default: '⭐', required: false })
+  @ApiProperty({
+    description: 'Icono del hábito (emoji)',
+    default: '⭐',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   habit_icon?: string;
@@ -38,7 +42,11 @@ export class CreateRoutineHabitDto {
   @IsOptional()
   frequency?: HabitFrequency;
 
-  @ApiProperty({ description: 'Orden en la rutina', default: 0, required: false })
+  @ApiProperty({
+    description: 'Orden en la rutina',
+    default: 0,
+    required: false,
+  })
   @IsInt()
   @Min(0)
   @IsOptional()
