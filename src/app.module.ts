@@ -11,6 +11,7 @@ import { CoachModule } from './coach/coach.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
+import { CommunityModule } from './community/community.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AdminModule } from './admin/admin.module';
     NotificationsModule,
     ReportsModule,
     AdminModule,
+    CommunityModule,
   ],
   controllers: [],
   providers: [
