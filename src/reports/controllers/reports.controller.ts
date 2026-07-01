@@ -1,9 +1,23 @@
-import { Controller, Get, Param, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseInterceptors,
+  UseGuards,
+} from '@nestjs/common';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { ReportsService } from '../services/reports.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 @ApiTags('reports')
+@ApiBearerAuth('supabase-jwt')
+@UseGuards(JwtAuthGuard)
 @Controller('reports')
 @UseInterceptors(CacheInterceptor)
 export class ReportsController {
@@ -24,5 +38,26 @@ export class ReportsController {
   @ApiResponse({ status: 200, description: 'Resumen obtenido exitosamente.' })
   async getUserSummary(@Param('userId') userId: string) {
     return this.reportsService.getUserSummary(userId);
+  }
+  @Get('user/:userId/habits')
+  @CacheTTL(30000)
+  @ApiOperation({ summary: 'Obtener reporte de hábitos de un usuario' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporte de hábitos obtenido exitosamente.',
+  })
+  async getUserHabits(@Param('userId') userId: string) {
+    return this.reportsService.getHabitsReport(userId);
+  }
+
+  @Get('user/:userId/comparative')
+  @CacheTTL(30000)
+  @ApiOperation({ summary: 'Obtener reporte comparativo de un usuario' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporte comparativo obtenido exitosamente.',
+  })
+  async getUserComparative() {
+    return this.reportsService.getComparativeReport();
   }
 }

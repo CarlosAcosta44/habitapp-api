@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipeBuilder,
+  HttpStatus,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -68,5 +80,35 @@ export class UsersController {
     @Body() dto: UpdateUserProfileDto,
   ) {
     return this.usersService.updateProfile(user.userId, dto);
+  }
+
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Subir foto de perfil',
+    description:
+      'Sube un archivo de imagen al bucket de Supabase y actualiza la URL en el perfil.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Avatar actualizado exitosamente.',
+  })
+  @ApiResponse({ status: 400, description: 'Archivo inválido o faltante.' })
+  @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
+  @ApiResponse({
+    status: 500,
+    description: 'Error interno del servidor o en el bucket.',
+  })
+  uploadAvatar(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' })
+        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+        .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadAvatar(user.userId, file);
   }
 }

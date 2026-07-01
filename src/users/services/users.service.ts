@@ -32,4 +32,8 @@ export class UsersService {
 
     return this.usersRepository.updateRole(targetUserId, dto.nombrerol);
   }
+
+  uploadAvatar(userId: string, file: Express.Multer.File) {
+    return this.usersRepository.uploadAvatar(userId, file);
+  }
 }

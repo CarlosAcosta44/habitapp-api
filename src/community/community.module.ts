@@ -7,6 +7,6 @@ import { SupabaseModule } from '../supabase/supabase.module';
   imports: [SupabaseModule],
   controllers: [CommunityController],
   providers: [CommunityService],
-  exports: [CommunityService]
+  exports: [CommunityService],
 })
 export class CommunityModule {}
