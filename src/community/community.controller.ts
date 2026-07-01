@@ -3,6 +3,10 @@ import { CommunityService } from './community.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiTags('community')
+@ApiBearerAuth('supabase-jwt')
 @Controller('community')
 @UseGuards(JwtAuthGuard)
 export class CommunityController {

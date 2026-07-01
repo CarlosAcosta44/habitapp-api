@@ -82,4 +82,41 @@ export class ReportsService {
       );
     }
   }
+  async getHabitsReport(userId: string) {
+    try {
+      const client = this.supabaseService.getClient();
+      const { data: habitos, error } = await client
+        .schema('seguimiento')
+        .from('habitos')
+        .select('idhabito, titulo, descripcion, color')
+        .eq('idusuario', userId)
+        .eq('estado', 'Activo');
+
+      if (error) throw new Error(error.message);
+
+      return habitos.map((h: any) => ({
+        idHabito: h.idhabito,
+        nombre: h.titulo,
+        porcentajeCambio: '+5%',
+        descripcion: h.descripcion || '',
+        progreso: 50,
+        color: h.color || 'bg-blue-500'
+      }));
+    } catch (error: any) {
+      throw new InternalServerErrorException(
+        'Error al obtener reporte de hábitos: ' + error.message,
+      );
+    }
+  }
+
+  async getComparativeReport(userId: string) {
+    // Retornamos datos de ejemplo que coincidan con la estructura ComparativaGraphed del frontend
+    return {
+      diasSemana: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      data: [
+        { categoriaId: 'salud', vals: [2, 3, 4, 3, 5, 4, 6] },
+        { categoriaId: 'enfoque', vals: [1, 2, 2, 4, 3, 5, 4] }
+      ]
+    };
+  }
 }

@@ -25,4 +25,19 @@ export class ReportsController {
   async getUserSummary(@Param('userId') userId: string) {
     return this.reportsService.getUserSummary(userId);
   }
+  @Get('user/:userId/habits')
+  @CacheTTL(30000)
+  @ApiOperation({ summary: 'Obtener reporte de hábitos de un usuario' })
+  @ApiResponse({ status: 200, description: 'Reporte de hábitos obtenido exitosamente.' })
+  async getUserHabits(@Param('userId') userId: string) {
+    return this.reportsService.getHabitsReport(userId);
+  }
+
+  @Get('user/:userId/comparative')
+  @CacheTTL(30000)
+  @ApiOperation({ summary: 'Obtener reporte comparativo de un usuario' })
+  @ApiResponse({ status: 200, description: 'Reporte comparativo obtenido exitosamente.' })
+  async getUserComparative(@Param('userId') userId: string) {
+    return this.reportsService.getComparativeReport(userId);
+  }
 }

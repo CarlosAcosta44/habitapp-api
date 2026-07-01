@@ -63,6 +63,7 @@ async function bootstrap() {
     .addTag('coach', 'Operaciones de entrenadores (asignación, rutinas)')
     .addTag('reports', 'Reportes y estadísticas')
     .addTag('notifications', 'Gestión de notificaciones del sistema')
+    .addTag('community', 'Foros, artículos y entrenadores de la comunidad')
     .addTag('health', 'Verificación de estado de la API')
     .build();
   const document = SwaggerModule.createDocument(app, config);
