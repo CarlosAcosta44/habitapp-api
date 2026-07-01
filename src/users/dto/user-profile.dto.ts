@@ -40,6 +40,32 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @MaxLength(200)
   fotoperfil?: string;
+
+  @ApiPropertyOptional({
+    example: '+573001234567',
+    description: 'Teléfono del usuario',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  telefono?: string;
+
+  @ApiPropertyOptional({
+    example: 'Masculino',
+    description: 'Género del usuario',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(30)
+  genero?: string;
+
+  @ApiPropertyOptional({
+    example: '1990-01-01',
+    description: 'Fecha de nacimiento',
+  })
+  @IsString()
+  @IsOptional()
+  fechanacimiento?: string;
 }
 
 export class UserProfileDto {
@@ -60,6 +86,18 @@ export class UserProfileDto {
     description: 'URL de la foto de perfil. Puede ser null si no se configuró.',
   })
   fotoperfil: string | null;
+
+  @ApiPropertyOptional({ example: '+573001234567', description: 'Teléfono' })
+  telefono?: string | null;
+
+  @ApiPropertyOptional({ example: 'Masculino', description: 'Género' })
+  genero?: string | null;
+
+  @ApiPropertyOptional({
+    example: '1990-01-01',
+    description: 'Fecha de nacimiento',
+  })
+  fechanacimiento?: string | null;
 
   @ApiProperty({
     example: 120,

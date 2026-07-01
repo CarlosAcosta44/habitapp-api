@@ -10,7 +10,8 @@ export class CommunityService {
     const { data, error } = await client
       .schema('comunidad')
       .from('foros')
-      .select(`
+      .select(
+        `
         idforo,
         titulo,
         descripcion,
@@ -19,7 +20,8 @@ export class CommunityService {
         fechacreacion,
         comentarios!idforo ( idcomentario ),
         usuario_foro!idforo ( idusuario )
-      `)
+      `,
+      )
       .eq('estado', 'Abierto')
       .order('fechacreacion', { ascending: false });
 
@@ -37,7 +39,7 @@ export class CommunityService {
       totalComentarios: row.comentarios?.length ?? 0,
       totalSuscriptores: row.usuario_foro?.length ?? 0,
       estasSuscrito: (row.usuario_foro || []).some(
-        (s: any) => s.idusuario === userId
+        (s: any) => s.idusuario === userId,
       ),
     }));
   }
@@ -47,7 +49,8 @@ export class CommunityService {
     const { data, error } = await client
       .schema('comunidad')
       .from('comentarios')
-      .select(`
+      .select(
+        `
         idcomentario,
         contenido,
         fechapublicacion,
@@ -62,7 +65,8 @@ export class CommunityService {
         reacciones!idcomentario (
           tipo
         )
-      `)
+      `,
+      )
       .eq('idforo', forumId)
       .order('fechapublicacion', { ascending: true });
 
@@ -86,7 +90,8 @@ export class CommunityService {
         },
         reacciones: {
           meGusta: reacciones.filter((r: any) => r.tipo === 'Me gusta').length,
-          meMotiva: reacciones.filter((r: any) => r.tipo === 'Me motiva').length,
+          meMotiva: reacciones.filter((r: any) => r.tipo === 'Me motiva')
+            .length,
           util: reacciones.filter((r: any) => r.tipo === 'Util').length,
         },
         respuestas: [],
@@ -99,7 +104,9 @@ export class CommunityService {
 
     return padres.map((padre: any) => ({
       ...padre,
-      respuestas: hijos.filter((hijo: any) => hijo.idComentarioPadre === padre.idComentario),
+      respuestas: hijos.filter(
+        (hijo: any) => hijo.idComentarioPadre === padre.idComentario,
+      ),
     }));
   }
 
@@ -225,7 +232,8 @@ export class CommunityService {
     const { data, error } = await client
       .schema('seguimiento')
       .from('entrenadores')
-      .select(`
+      .select(
+        `
         identrenador,
         especialidad,
         certificacion,
@@ -234,7 +242,8 @@ export class CommunityService {
           apellido,
           fotoperfil
         )
-      `)
+      `,
+      )
       .limit(6);
 
     if (error) throw new InternalServerErrorException(error.message);

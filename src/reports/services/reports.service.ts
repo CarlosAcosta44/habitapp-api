@@ -100,7 +100,7 @@ export class ReportsService {
         porcentajeCambio: '+5%',
         descripcion: h.descripcion || '',
         progreso: 50,
-        color: h.color || 'bg-blue-500'
+        color: h.color || 'bg-blue-500',
       }));
     } catch (error: any) {
       throw new InternalServerErrorException(
@@ -109,14 +109,14 @@ export class ReportsService {
     }
   }
 
-  async getComparativeReport(userId: string) {
+  async getComparativeReport() {
     // Retornamos datos de ejemplo que coincidan con la estructura ComparativaGraphed del frontend
     return {
       diasSemana: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
       data: [
         { categoriaId: 'salud', vals: [2, 3, 4, 3, 5, 4, 6] },
-        { categoriaId: 'enfoque', vals: [1, 2, 2, 4, 3, 5, 4] }
-      ]
+        { categoriaId: 'enfoque', vals: [1, 2, 2, 4, 3, 5, 4] },
+      ],
     };
   }
 }

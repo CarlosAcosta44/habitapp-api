@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -24,12 +32,18 @@ export class CommunityController {
 
   @Post('comments')
   createComment(@Body() dto: any, @CurrentUser() user: any) {
-    return this.communityService.createComment({ ...dto, idUsuario: user.userId });
+    return this.communityService.createComment({
+      ...dto,
+      idUsuario: user.userId,
+    });
   }
 
   @Post('react')
   toggleReaction(@Body() dto: any, @CurrentUser() user: any) {
-    return this.communityService.toggleReaction({ ...dto, idUsuario: user.userId });
+    return this.communityService.toggleReaction({
+      ...dto,
+      idUsuario: user.userId,
+    });
   }
 
   @Post('forums/:id/subscribe')

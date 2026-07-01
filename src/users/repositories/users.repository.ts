@@ -29,6 +29,9 @@ export class UsersRepository {
       nombre: data.nombre,
       apellido: data.apellido,
       fotoperfil: data.fotoperfil,
+      telefono: data.telefono,
+      genero: data.genero,
+      fechanacimiento: data.fechanacimiento,
       puntostotales: data.puntostotales,
       idrol: data.idrol,
       nombrerol: data.roles?.nombrerol || 'Usuario',
@@ -55,6 +58,9 @@ export class UsersRepository {
       nombre: u.nombre,
       apellido: u.apellido,
       fotoperfil: u.fotoperfil,
+      telefono: u.telefono,
+      genero: u.genero,
+      fechanacimiento: u.fechanacimiento,
       puntostotales: u.puntostotales,
       idrol: u.idrol,
       nombrerol: u.roles?.nombrerol || 'Usuario',
@@ -64,7 +70,15 @@ export class UsersRepository {
   async updateProfile(
     userId: string,
     payload: Partial<
-      Pick<UserProfileRow, 'nombre' | 'apellido' | 'fotoperfil'>
+      Pick<
+        UserProfileRow,
+        | 'nombre'
+        | 'apellido'
+        | 'fotoperfil'
+        | 'telefono'
+        | 'genero'
+        | 'fechanacimiento'
+      >
     >,
   ): Promise<UserProfileRow> {
     const { error: updateError } = await this.supabaseService
@@ -113,5 +127,37 @@ export class UsersRepository {
     }
 
     return this.findProfileById(userId);
+  }
+
+  async uploadAvatar(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<{ url: string }> {
+    const fileExt = file.originalname.split('.').pop() || 'png';
+    const fileName = `${userId}_${Date.now()}.${fileExt}`;
+    const filePath = `profiles/${fileName}`;
+
+    const { error: uploadError } = await this.supabaseService
+      .getClient()
+      .storage.from('avatars')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new InternalServerErrorException(
+        `Error al subir imagen al bucket: ${uploadError.message}`,
+      );
+    }
+
+    const { data } = this.supabaseService
+      .getClient()
+      .storage.from('avatars')
+      .getPublicUrl(filePath);
+
+    await this.updateProfile(userId, { fotoperfil: data.publicUrl });
+
+    return { url: data.publicUrl };
   }
 }

@@ -28,7 +28,10 @@ export class ReportsController {
   @Get('user/:userId/habits')
   @CacheTTL(30000)
   @ApiOperation({ summary: 'Obtener reporte de hábitos de un usuario' })
-  @ApiResponse({ status: 200, description: 'Reporte de hábitos obtenido exitosamente.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporte de hábitos obtenido exitosamente.',
+  })
   async getUserHabits(@Param('userId') userId: string) {
     return this.reportsService.getHabitsReport(userId);
   }
@@ -36,8 +39,11 @@ export class ReportsController {
   @Get('user/:userId/comparative')
   @CacheTTL(30000)
   @ApiOperation({ summary: 'Obtener reporte comparativo de un usuario' })
-  @ApiResponse({ status: 200, description: 'Reporte comparativo obtenido exitosamente.' })
-  async getUserComparative(@Param('userId') userId: string) {
-    return this.reportsService.getComparativeReport(userId);
+  @ApiResponse({
+    status: 200,
+    description: 'Reporte comparativo obtenido exitosamente.',
+  })
+  async getUserComparative() {
+    return this.reportsService.getComparativeReport();
   }
 }
