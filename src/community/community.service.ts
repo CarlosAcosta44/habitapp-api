@@ -10,7 +10,8 @@ export class CommunityService {
     const { data, error } = await client
       .schema('comunidad')
       .from('foros')
-      .select(`
+      .select(
+        `
         idforo,
         titulo,
         descripcion,
@@ -19,7 +20,8 @@ export class CommunityService {
         fechacreacion,
         comentarios!idforo ( idcomentario ),
         usuario_foro!idforo ( idusuario )
-      `)
+      `,
+      )
       .eq('estado', 'Abierto')
       .order('fechacreacion', { ascending: false });
 
@@ -37,7 +39,7 @@ export class CommunityService {
       totalComentarios: row.comentarios?.length ?? 0,
       totalSuscriptores: row.usuario_foro?.length ?? 0,
       estasSuscrito: (row.usuario_foro || []).some(
-        (s: any) => s.idusuario === userId
+        (s: any) => s.idusuario === userId,
       ),
     }));
   }
@@ -47,22 +49,19 @@ export class CommunityService {
     const { data, error } = await client
       .schema('comunidad')
       .from('comentarios')
-      .select(`
+      .select(
+        `
         idcomentario,
         contenido,
         fechapublicacion,
         idcomentario_padre,
         idforo,
         idusuario,
-        usuarios!idusuario (
-          nombre,
-          apellido,
-          fotoperfil
-        ),
         reacciones!idcomentario (
           tipo
         )
-      `)
+      `,
+      )
       .eq('idforo', forumId)
       .order('fechapublicacion', { ascending: true });
 
@@ -70,8 +69,31 @@ export class CommunityService {
       throw new InternalServerErrorException(error.message);
     }
 
+    // Extraer IDs únicos de usuarios
+    const userIds = [
+      ...new Set((data || []).map((row: any) => row.idusuario)),
+    ].filter(Boolean);
+    let usuariosMap: any = {};
+
+    if (userIds.length > 0) {
+      const { data: usersData, error: usersError } = await client
+        .schema('gestion')
+        .from('usuarios')
+        .select('idusuario, nombre, apellido, fotoperfil')
+        .in('idusuario', userIds);
+
+      if (!usersError && usersData) {
+        usuariosMap = usersData.reduce((acc: any, curr: any) => {
+          acc[curr.idusuario] = curr;
+          return acc;
+        }, {});
+      }
+    }
+
     const todos = (data || []).map((row: any) => {
       const reacciones = row.reacciones || [];
+      const user = usuariosMap[row.idusuario] || {};
+
       return {
         idComentario: row.idcomentario,
         contenido: row.contenido,
@@ -80,13 +102,14 @@ export class CommunityService {
         idForo: row.idforo,
         idUsuario: row.idusuario,
         autor: {
-          nombre: row.usuarios?.nombre ?? '',
-          apellido: row.usuarios?.apellido ?? '',
-          fotoPerfil: row.usuarios?.fotoperfil ?? null,
+          nombre: user.nombre ?? '',
+          apellido: user.apellido ?? '',
+          fotoPerfil: user.fotoperfil ?? null,
         },
         reacciones: {
           meGusta: reacciones.filter((r: any) => r.tipo === 'Me gusta').length,
-          meMotiva: reacciones.filter((r: any) => r.tipo === 'Me motiva').length,
+          meMotiva: reacciones.filter((r: any) => r.tipo === 'Me motiva')
+            .length,
           util: reacciones.filter((r: any) => r.tipo === 'Util').length,
         },
         respuestas: [],
@@ -99,7 +122,9 @@ export class CommunityService {
 
     return padres.map((padre: any) => ({
       ...padre,
-      respuestas: hijos.filter((hijo: any) => hijo.idComentarioPadre === padre.idComentario),
+      respuestas: hijos.filter(
+        (hijo: any) => hijo.idComentarioPadre === padre.idComentario,
+      ),
     }));
   }
 
@@ -225,27 +250,47 @@ export class CommunityService {
     const { data, error } = await client
       .schema('seguimiento')
       .from('entrenadores')
-      .select(`
+      .select(
+        `
         identrenador,
+        idusuario,
         especialidad,
-        certificacion,
-        usuarios!idusuario (
-          nombre,
-          apellido,
-          fotoperfil
-        )
-      `)
+        certificacion
+      `,
+      )
       .limit(6);
 
     if (error) throw new InternalServerErrorException(error.message);
 
-    return (data || []).map((row: any) => ({
-      idEntrenador: row.identrenador,
-      nombre: row.usuarios?.nombre ?? '',
-      apellido: row.usuarios?.apellido ?? '',
-      fotoPerfil: row.usuarios?.fotoperfil ?? null,
-      especialidad: row.especialidad,
-      certificacion: row.certificacion,
-    }));
+    const userIds = [
+      ...new Set((data || []).map((row: any) => row.idusuario)),
+    ].filter(Boolean);
+    let usuariosMap: any = {};
+    if (userIds.length > 0) {
+      const { data: usersData } = await client
+        .schema('gestion')
+        .from('usuarios')
+        .select('idusuario, nombre, apellido, fotoperfil')
+        .in('idusuario', userIds);
+
+      if (usersData) {
+        usuariosMap = usersData.reduce((acc: any, curr: any) => {
+          acc[curr.idusuario] = curr;
+          return acc;
+        }, {});
+      }
+    }
+
+    return (data || []).map((row: any) => {
+      const user = usuariosMap[row.idusuario] || {};
+      return {
+        idEntrenador: row.identrenador,
+        nombre: user.nombre ?? '',
+        apellido: user.apellido ?? '',
+        fotoPerfil: user.fotoperfil ?? null,
+        especialidad: row.especialidad,
+        certificacion: row.certificacion,
+      };
+    });
   }
 }
