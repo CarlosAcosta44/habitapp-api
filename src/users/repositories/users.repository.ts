@@ -160,4 +160,88 @@ export class UsersRepository {
 
     return { url: data.publicUrl };
   }
+
+  async findByEmail(email: string): Promise<any> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .select('*, roles(nombrerol)')
+      .eq('email', email)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw new InternalServerErrorException(
+        `Error al buscar usuario por email: ${error.message}`,
+      );
+    }
+
+    return data || null;
+  }
+
+  async getDefaultRoleId(): Promise<string> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('roles')
+      .select('idrol')
+      .eq('nombrerol', RoleName.USER)
+      .single();
+
+    if (error || !data) {
+      throw new InternalServerErrorException(
+        'No se pudo encontrar el rol por defecto (Usuario)',
+      );
+    }
+
+    return data.idrol;
+  }
+
+  async createLocalUser(payload: any): Promise<any> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al crear usuario: ${error.message}`,
+      );
+    }
+
+    return data;
+  }
+
+  async markEmailVerified(userId: string): Promise<void> {
+    const { error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .update({ email_verified: true })
+      .eq('idusuario', userId);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al verificar email: ${error.message}`,
+      );
+    }
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    const { error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .update({ password_hash: passwordHash })
+      .eq('idusuario', userId);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar contraseña: ${error.message}`,
+      );
+    }
+  }
 }

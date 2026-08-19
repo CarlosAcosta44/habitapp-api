@@ -11,12 +11,16 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Helmet (Security Headers)
   app.use(helmet());
+
+  // Cookie Parser
+  app.use(cookieParser());
 
   // Global Prefix
   app.setGlobalPrefix('api/v1');
@@ -40,22 +44,27 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('HabitApp API')
     .setDescription(
-      'API backend de HabitApp. Expone endpoints de autenticación vía Supabase JWT, ' +
+      'API backend de HabitApp. Expone endpoints de autenticación propia, ' +
         'gestión de perfiles de usuario, operaciones de entrenador (coach) y health check. ' +
-        'Todos los endpoints protegidos requieren un Bearer token de Supabase.',
+        'Los endpoints protegidos requieren una cookie de sesión (access_token) o un Bearer token.',
     )
     .setVersion('1.0.0')
     .setContact('Carlos Acosta — Tech Lead', '', 'carlos@habitapp.io')
     .setLicense('UNLICENSED', '')
+    .addCookieAuth('access_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'access_token',
+    })
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
         description:
-          'Token JWT emitido por Supabase Auth. Incluir en el header: Authorization: Bearer <token>',
+          'Token JWT propio. Incluir en el header: Authorization: Bearer <token>',
       },
-      'supabase-jwt',
+      'jwt',
     )
     .addTag('auth', 'Endpoints de autenticación y tokens')
     .addTag('admin', 'Endpoints exclusivos para administradores')
