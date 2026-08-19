@@ -16,7 +16,6 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -92,11 +91,7 @@ export class AuthController {
     return { message: 'Sesión cerrada exitosamente' };
   }
 
-  private setAuthCookies(
-    res: any,
-    accessToken: string,
-    refreshToken: string,
-  ) {
+  private setAuthCookies(res: any, accessToken: string, refreshToken: string) {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

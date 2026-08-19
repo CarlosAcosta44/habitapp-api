@@ -2,7 +2,6 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -13,8 +12,6 @@ import { AuthRepository } from './repositories/auth.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +39,8 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(pass, user.password_hash);
     if (isMatch) {
-      const { password_hash, ...result } = user;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password_hash: _password_hash, ...result } = user;
       return result;
     }
     return null;
