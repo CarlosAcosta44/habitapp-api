@@ -9,11 +9,13 @@ import {
   UploadedFile,
   ParseFilePipeBuilder,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiBearerAuth,
+  ApiCookieAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -35,7 +37,7 @@ interface AuthenticatedUser {
 }
 
 @ApiTags('users')
-@ApiBearerAuth('supabase-jwt')
+@ApiCookieAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 export class UsersController {
@@ -110,5 +112,28 @@ export class UsersController {
     file: Express.Multer.File,
   ) {
     return this.usersService.uploadAvatar(user.userId, file);
+  }
+
+  @Get('me/profile')
+  @ApiOperation({ summary: 'Resumen básico de perfil: nombre, foto y puntos' })
+  getProfile(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getSimpleProfile(user.userId);
+  }
+
+  @Get('me/points-history')
+  @ApiOperation({ summary: 'Historial de puntos del usuario' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Número de registros (default: 20)' })
+  getPointsHistory(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+  ) {
+    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    return this.usersService.getPointsHistory(user.userId, parsedLimit);
+  }
+
+  @Get('me/achievements')
+  @ApiOperation({ summary: 'Logros desbloqueados por el usuario' })
+  getAchievements(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getAchievements(user.userId);
   }
 }
