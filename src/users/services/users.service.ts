@@ -36,4 +36,19 @@ export class UsersService {
   uploadAvatar(userId: string, file: Express.Multer.File) {
     return this.usersRepository.uploadAvatar(userId, file);
   }
+
+  /** Resumen básico de perfil: nombre, fotoperfil, puntos */
+  getSimpleProfile(userId: string) {
+    return this.usersRepository.getSimpleProfile(userId);
+  }
+
+  /** Historial de puntos del usuario */
+  getPointsHistory(userId: string, limit: number) {
+    return this.usersRepository.getPointsHistory(userId, limit);
+  }
+
+  /** Logros desbloqueados por el usuario */
+  getAchievements(userId: string) {
+    return this.usersRepository.getAchievements(userId);
+  }
 }

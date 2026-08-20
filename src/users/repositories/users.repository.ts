@@ -244,4 +244,90 @@ export class UsersRepository {
       );
     }
   }
+
+  async getSimpleProfile(userId: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('perfiles_usuarios_api')
+      .select('nombre, apellido, fotoperfil, puntostotales')
+      .eq('idusuario', userId)
+      .maybeSingle<any>();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener perfil simplificado: ${error.message}`,
+      );
+    }
+    if (!data) return null;
+    return {
+      nombre: data.nombre ?? 'Usuario',
+      apellido: data.apellido ?? '',
+      fotoperfil: data.fotoperfil ?? null,
+      puntos: data.puntostotales ?? 0,
+    };
+  }
+
+  async getPointsHistory(userId: string, limit: number) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .from('api_historial_puntos')
+      .select('*')
+      .eq('idusuario', userId)
+      .order('fecha', { ascending: false })
+      .limit(limit)
+      .returns<any[]>();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener historial de puntos: ${error.message}`,
+      );
+    }
+    return data ?? [];
+  }
+
+  async getAchievements(userId: string) {
+    const { data: logrosGanados, error: ganadosError } =
+      await this.supabaseService
+        .getClient()
+        .from('api_usuario_logro')
+        .select('*')
+        .eq('idusuario', userId)
+        .returns<any[]>();
+
+    if (ganadosError) {
+      throw new InternalServerErrorException(
+        `Error al obtener logros: ${ganadosError.message}`,
+      );
+    }
+
+    const idsGanados = (logrosGanados ?? []).map((l: any) => l.idlogro);
+    if (idsGanados.length === 0) return [];
+
+    const { data: catalogoLogros, error: catalogoError } =
+      await this.supabaseService
+        .getClient()
+        .from('api_logros')
+        .select('*')
+        .in('idlogro', idsGanados)
+        .returns<any[]>();
+
+    if (catalogoError) {
+      throw new InternalServerErrorException(
+        `Error al obtener catálogo de logros: ${catalogoError.message}`,
+      );
+    }
+
+    return (catalogoLogros ?? []).map((lg: any) => {
+      const meta = (logrosGanados ?? []).find(
+        (ul: any) => ul.idlogro === lg.idlogro,
+      );
+      return {
+        id: lg.idlogro,
+        nombre: lg.nombre,
+        desc: lg.descripcion,
+        fecha: meta?.fechaobtenido || 'Recientemente',
+        icono: lg.icono,
+      };
+    });
+  }
 }
