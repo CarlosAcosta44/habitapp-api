@@ -14,7 +14,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiCookieAuth,
   ApiOperation,
   ApiQuery,
@@ -47,17 +46,18 @@ export class HabitsController {
 
   @Get()
   @ApiOperation({ summary: 'Obtener todos los hábitos del usuario' })
-  @ApiQuery({ name: 'estado', required: false, description: 'Filtrar por estado' })
+  @ApiQuery({
+    name: 'estado',
+    required: false,
+    description: 'Filtrar por estado',
+  })
   findAll(@Req() req: any, @Query('estado') estado?: string) {
     return this.habitsService.findAll(req.user.idusuario as string, estado);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un hábito por ID' })
-  findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Req() req: any,
-  ) {
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     return this.habitsService.findById(id, req.user.idusuario as string);
   }
 

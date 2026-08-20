@@ -286,12 +286,13 @@ export class UsersRepository {
   }
 
   async getAchievements(userId: string) {
-    const { data: logrosGanados, error: ganadosError } = await this.supabaseService
-      .getClient()
-      .from('api_usuario_logro')
-      .select('*')
-      .eq('idusuario', userId)
-      .returns<any[]>();
+    const { data: logrosGanados, error: ganadosError } =
+      await this.supabaseService
+        .getClient()
+        .from('api_usuario_logro')
+        .select('*')
+        .eq('idusuario', userId)
+        .returns<any[]>();
 
     if (ganadosError) {
       throw new InternalServerErrorException(
@@ -302,12 +303,13 @@ export class UsersRepository {
     const idsGanados = (logrosGanados ?? []).map((l: any) => l.idlogro);
     if (idsGanados.length === 0) return [];
 
-    const { data: catalogoLogros, error: catalogoError } = await this.supabaseService
-      .getClient()
-      .from('api_logros')
-      .select('*')
-      .in('idlogro', idsGanados)
-      .returns<any[]>();
+    const { data: catalogoLogros, error: catalogoError } =
+      await this.supabaseService
+        .getClient()
+        .from('api_logros')
+        .select('*')
+        .in('idlogro', idsGanados)
+        .returns<any[]>();
 
     if (catalogoError) {
       throw new InternalServerErrorException(
@@ -329,4 +331,3 @@ export class UsersRepository {
     });
   }
 }
-

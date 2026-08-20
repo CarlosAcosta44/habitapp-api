@@ -122,7 +122,12 @@ export class UsersController {
 
   @Get('me/points-history')
   @ApiOperation({ summary: 'Historial de puntos del usuario' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Número de registros (default: 20)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Número de registros (default: 20)',
+  })
   getPointsHistory(
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,

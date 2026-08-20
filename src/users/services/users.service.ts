@@ -52,4 +52,3 @@ export class UsersService {
     return this.usersRepository.getAchievements(userId);
   }
 }
-

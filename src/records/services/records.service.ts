@@ -18,8 +18,10 @@ export class RecordsService {
   async getByHabito(habitoId: string, userId: string) {
     // Verificar ownership del hábito
     const habito = await this.habitsRepo.findById(habitoId);
-    if (!habito) throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
 
     return this.recordsRepo.findByHabitoId(habitoId);
   }
@@ -31,8 +33,10 @@ export class RecordsService {
   async marcarCompletado(dto: CreateRecordDto, userId: string) {
     // Verificar ownership del hábito
     const habito = await this.habitsRepo.findById(dto.idHabito);
-    if (!habito) throw new NotFoundException(`Hábito ${dto.idHabito} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${dto.idHabito} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
 
     const hoy = new Date().toISOString().split('T')[0];
 
@@ -52,15 +56,19 @@ export class RecordsService {
 
   async desmarcarCompletado(habitoId: string, userId: string) {
     const habito = await this.habitsRepo.findById(habitoId);
-    if (!habito) throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
 
     const registroHoy = await this.recordsRepo.findHoy(habitoId, userId);
     if (!registroHoy) {
       throw new BadRequestException('No hay registro de hoy para desmarcar');
     }
     if (!registroHoy.completado) {
-      throw new BadRequestException('Este hábito no está marcado como completado hoy');
+      throw new BadRequestException(
+        'Este hábito no está marcado como completado hoy',
+      );
     }
 
     return this.recordsRepo.desmarcarCompletado(habitoId, userId);
@@ -68,11 +76,15 @@ export class RecordsService {
 
   async avanzarProgreso(dto: AvanzarProgresoDto, userId: string) {
     const habito = await this.habitsRepo.findById(dto.idHabito);
-    if (!habito) throw new NotFoundException(`Hábito ${dto.idHabito} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${dto.idHabito} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
 
     if (dto.cantidadASumar <= 0) {
-      throw new BadRequestException('La cantidad a sumar debe ser mayor a cero');
+      throw new BadRequestException(
+        'La cantidad a sumar debe ser mayor a cero',
+      );
     }
 
     const hoy = new Date().toISOString().split('T')[0];
@@ -89,8 +101,10 @@ export class RecordsService {
 
   async getRacha(habitoId: string, userId: string) {
     const habito = await this.habitsRepo.findById(habitoId);
-    if (!habito) throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
 
     return this.recordsRepo.calcularRacha(habitoId, userId);
   }

@@ -31,7 +31,10 @@ export class UpdateHabitDto {
   @IsDateString()
   fechaFin?: string;
 
-  @ApiPropertyOptional({ description: 'Estado del hábito', enum: ['Activo', 'Completado', 'Cancelado'] })
+  @ApiPropertyOptional({
+    description: 'Estado del hábito',
+    enum: ['Activo', 'Completado', 'Cancelado'],
+  })
   @IsOptional()
   @IsIn(['Activo', 'Completado', 'Cancelado'])
   estado?: string;

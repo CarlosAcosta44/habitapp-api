@@ -1,7 +1,6 @@
 import {
   Injectable,
   InternalServerErrorException,
-  NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 
@@ -101,12 +100,14 @@ export class HabitsRepository {
 
     const { data, error } = await this.db
       .from('habitos')
-      .select(`
+      .select(
+        `
         idhabito, nombre, descripcion, fechainicio, fechafin, estado,
         puntos, meta_diaria, unidad_medida, idusuario, idcategoria,
         categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion),
         registro_habitos(idregistro, completado, progreso_actual, puntos_ganados, observacion, fecha)
-      `)
+      `,
+      )
       .eq('idusuario', userId)
       .eq('estado', 'Activo')
       .order('nombre', { ascending: true })
@@ -120,8 +121,7 @@ export class HabitsRepository {
 
     return (data ?? []).map((row: any) => {
       const registros = row.registro_habitos ?? [];
-      const registroHoy =
-        registros.find((r: any) => r.fecha === hoy) ?? null;
+      const registroHoy = registros.find((r: any) => r.fecha === hoy) ?? null;
       return {
         ...this.mapToDomain(row),
         registroHoy: registroHoy
@@ -144,7 +144,9 @@ export class HabitsRepository {
       .from('categorias_habitos')
       .select('idcategoria, nombre, descripcion')
       .order('nombre', { ascending: true })
-      .returns<{ idcategoria: string; nombre: string; descripcion: string | null }[]>();
+      .returns<
+        { idcategoria: string; nombre: string; descripcion: string | null }[]
+      >();
 
     if (error) {
       throw new InternalServerErrorException(
@@ -182,7 +184,7 @@ export class HabitsRepository {
         `Error al crear hábito: ${error.message}`,
       );
     }
-    return this.mapToDomain(data!);
+    return this.mapToDomain(data);
   }
 
   async update(idHabito: string, updates: Record<string, unknown>) {
@@ -199,20 +201,14 @@ export class HabitsRepository {
         `Error al actualizar hábito: ${error.message}`,
       );
     }
-    return this.mapToDomain(data!);
+    return this.mapToDomain(data);
   }
 
   async delete(idHabito: string): Promise<void> {
     // Borrar registros y recordatorios primero
-    await this.db
-      .from('registro_habitos')
-      .delete()
-      .eq('idhabito', idHabito);
+    await this.db.from('registro_habitos').delete().eq('idhabito', idHabito);
 
-    await this.db
-      .from('recordatorios')
-      .delete()
-      .eq('idhabito', idHabito);
+    await this.db.from('recordatorios').delete().eq('idhabito', idHabito);
 
     const { error } = await this.db
       .from('habitos')

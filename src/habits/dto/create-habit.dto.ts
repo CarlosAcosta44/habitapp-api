@@ -26,16 +26,25 @@ export class CreateHabitDto {
   @MaxLength(500)
   descripcion?: string;
 
-  @ApiProperty({ description: 'Fecha de inicio (YYYY-MM-DD)', example: '2026-08-20' })
+  @ApiProperty({
+    description: 'Fecha de inicio (YYYY-MM-DD)',
+    example: '2026-08-20',
+  })
   @IsDateString()
   fechaInicio: string;
 
-  @ApiPropertyOptional({ description: 'Fecha de fin (YYYY-MM-DD)', example: '2026-12-31' })
+  @ApiPropertyOptional({
+    description: 'Fecha de fin (YYYY-MM-DD)',
+    example: '2026-12-31',
+  })
   @IsOptional()
   @IsDateString()
   fechaFin?: string;
 
-  @ApiProperty({ description: 'Puntos que otorga el hábito (1-100)', example: 10 })
+  @ApiProperty({
+    description: 'Puntos que otorga el hábito (1-100)',
+    example: 10,
+  })
   @IsNumber()
   @Min(1)
   @Max(100)

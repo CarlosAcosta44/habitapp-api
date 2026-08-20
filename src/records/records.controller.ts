@@ -12,11 +12,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiCookieAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RecordsService } from './services/records.service';
 import { AvanzarProgresoDto, CreateRecordDto } from './dto/create-record.dto';
@@ -29,7 +25,9 @@ export class RecordsController {
   constructor(private readonly recordsService: RecordsService) {}
 
   @Get('historial')
-  @ApiOperation({ summary: 'Obtener historial completo de registros del usuario' })
+  @ApiOperation({
+    summary: 'Obtener historial completo de registros del usuario',
+  })
   getHistorial(@Req() req: any) {
     return this.recordsService.getHistorial(req.user.idusuario as string);
   }
@@ -52,10 +50,7 @@ export class RecordsController {
     @Param('habitoId', ParseUUIDPipe) habitoId: string,
     @Req() req: any,
   ) {
-    return this.recordsService.getRacha(
-      habitoId,
-      req.user.idusuario as string,
-    );
+    return this.recordsService.getRacha(habitoId, req.user.idusuario as string);
   }
 
   @Post('completar')

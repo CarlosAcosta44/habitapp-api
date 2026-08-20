@@ -58,9 +58,7 @@ export class FriendsRepository {
       .from('api_amigos')
       .select('*')
       .eq('estado', 'Aceptado')
-      .or(
-        `idusuario_solicitante.eq.${userId},idusuario_receptor.eq.${userId}`,
-      );
+      .or(`idusuario_solicitante.eq.${userId},idusuario_receptor.eq.${userId}`);
 
     if (amistadError) {
       throw new InternalServerErrorException(
@@ -101,9 +99,7 @@ export class FriendsRepository {
     const { data: misAmistades, error: amistadError } = await this.client
       .from('api_amigos')
       .select('idusuario_solicitante, idusuario_receptor')
-      .or(
-        `idusuario_solicitante.eq.${userId},idusuario_receptor.eq.${userId}`,
-      );
+      .or(`idusuario_solicitante.eq.${userId},idusuario_receptor.eq.${userId}`);
 
     if (amistadError) {
       throw new InternalServerErrorException(

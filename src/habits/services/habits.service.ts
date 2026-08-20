@@ -22,8 +22,10 @@ export class HabitsService {
 
   async findById(idHabito: string, userId: string) {
     const habito = await this.habitsRepo.findById(idHabito);
-    if (!habito) throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
     return habito;
   }
 
@@ -59,14 +61,13 @@ export class HabitsService {
 
   async update(idHabito: string, dto: UpdateHabitDto, userId: string) {
     const habito = await this.habitsRepo.findById(idHabito);
-    if (!habito) throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
 
     // ─── Reglas de negocio ────────────────────────────────────────────────────
-    if (
-      habito.estado === 'Completado' &&
-      dto.estado === 'Activo'
-    ) {
+    if (habito.estado === 'Completado' && dto.estado === 'Activo') {
       throw new BadRequestException(
         'No se puede reactivar un hábito ya completado',
       );
@@ -94,8 +95,10 @@ export class HabitsService {
 
   async delete(idHabito: string, userId: string) {
     const habito = await this.habitsRepo.findById(idHabito);
-    if (!habito) throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
-    if (habito.idUsuario !== userId) throw new ForbiddenException('Acceso denegado');
+    if (!habito)
+      throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
+    if (habito.idUsuario !== userId)
+      throw new ForbiddenException('Acceso denegado');
     await this.habitsRepo.delete(idHabito);
     return { success: true };
   }

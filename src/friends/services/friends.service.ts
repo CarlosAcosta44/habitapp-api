@@ -11,7 +11,9 @@ export class FriendsService {
 
   async addFriend(userId: string, targetUserId: string) {
     if (userId === targetUserId) {
-      throw new BadRequestException('No puedes agregarte a ti mismo como amigo');
+      throw new BadRequestException(
+        'No puedes agregarte a ti mismo como amigo',
+      );
     }
 
     const targetExists = await this.friendsRepo.targetUserExists(targetUserId);
@@ -24,9 +26,7 @@ export class FriendsService {
       targetUserId,
     );
     if (alreadyFriends) {
-      throw new BadRequestException(
-        'Este usuario ya está en tu red de amigos',
-      );
+      throw new BadRequestException('Este usuario ya está en tu red de amigos');
     }
 
     await this.friendsRepo.createAcceptedRelation(userId, targetUserId);

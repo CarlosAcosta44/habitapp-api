@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 
 interface RawRegistro {
@@ -55,11 +52,13 @@ export class RecordsRepository {
   async findByUsuarioId(usuarioId: string) {
     const { data, error } = await this.db
       .from('registro_habitos')
-      .select(`
+      .select(
+        `
         idregistro, fecha, completado, progreso_actual, puntos_ganados,
         observacion, idhabito, idusuario,
         habitos(nombre, puntos, idcategoria)
-      `)
+      `,
+      )
       .eq('idusuario', usuarioId)
       .order('fecha', { ascending: false })
       .returns<any[]>();
@@ -97,7 +96,7 @@ export class RecordsRepository {
         `Error al buscar registro de hoy: ${error.message}`,
       );
     }
-    return data ? this.mapToDomain(data as unknown as RawRegistro) : null;
+    return data ? this.mapToDomain(data) : null;
   }
 
   async marcarCompletado(payload: {
@@ -127,7 +126,7 @@ export class RecordsRepository {
         `Error al marcar hábito: ${error.message}`,
       );
     }
-    return this.mapToDomain(data!);
+    return this.mapToDomain(data);
   }
 
   async desmarcarCompletado(habitoId: string, usuarioId: string) {
@@ -148,7 +147,7 @@ export class RecordsRepository {
         `Error al desmarcar hábito: ${error.message}`,
       );
     }
-    return this.mapToDomain(data!);
+    return this.mapToDomain(data);
   }
 
   async avanzarProgreso(payload: {
@@ -197,7 +196,7 @@ export class RecordsRepository {
         `Error al avanzar progreso: ${error.message}`,
       );
     }
-    return this.mapToDomain(data!);
+    return this.mapToDomain(data);
   }
 
   async calcularRacha(habitoId: string, usuarioId: string) {
@@ -220,7 +219,12 @@ export class RecordsRepository {
     const totalCompletados = registros.length;
 
     if (totalCompletados === 0) {
-      return { idHabito: habitoId, rachaActual: 0, rachaMaxima: 0, totalCompletados: 0 };
+      return {
+        idHabito: habitoId,
+        rachaActual: 0,
+        rachaMaxima: 0,
+        totalCompletados: 0,
+      };
     }
 
     let rachaActual = 0;
@@ -243,7 +247,8 @@ export class RecordsRepository {
 
     for (let i = 1; i < fechasAsc.length; i++) {
       const diffDias = Math.round(
-        (new Date(fechasAsc[i]).getTime() - new Date(fechasAsc[i - 1]).getTime()) /
+        (new Date(fechasAsc[i]).getTime() -
+          new Date(fechasAsc[i - 1]).getTime()) /
           86400000,
       );
       if (diffDias === 1) {
