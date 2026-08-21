@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -13,11 +14,14 @@ import {
   ApiResponse,
   ApiTags,
   ApiCookieAuth,
+  ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { GoogleOAuthGuard } from './guards/google-oauth.guard';
+import type { GoogleProfile } from './strategies/google.strategy';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -89,6 +93,38 @@ export class AuthController {
     });
 
     return { message: 'Sesión cerrada exitosamente' };
+  }
+
+  // ─── Google OAuth ──────────────────────────────────────────────────────────
+
+  @Get('google')
+  @UseGuards(GoogleOAuthGuard)
+  @ApiOperation({ summary: 'Iniciar flujo OAuth con Google' })
+  @ApiResponse({ status: 302, description: 'Redirige a Google.' })
+  googleAuth() {
+    // El guard de Passport intercepta este endpoint y redirige a Google
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleOAuthGuard)
+  @ApiExcludeEndpoint()
+  async googleAuthCallback(@Req() req: any, @Res() res: any) {
+    const profile = req.user as GoogleProfile;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    try {
+      const loginResult =
+        await this.authService.findOrCreateGoogleUser(profile);
+      this.setAuthCookies(
+        res,
+        loginResult.access_token,
+        loginResult.refresh_token,
+      );
+      res.redirect(`${frontendUrl}/dashboard`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'oauth_error';
+      res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(message)}`);
+    }
   }
 
   private setAuthCookies(res: any, accessToken: string, refreshToken: string) {
