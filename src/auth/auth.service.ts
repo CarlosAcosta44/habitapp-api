@@ -169,4 +169,77 @@ export class AuthService {
       await this.authRepository.revokeRefreshToken(tokenRecord.id);
     }
   }
+
+  // ─── OAuth ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Busca o crea un usuario a partir del perfil de Google.
+   * Seguridad: solo vincula automáticamente si el email está verificado por Google.
+   */
+  async findOrCreateGoogleUser(profile: {
+    googleId: string;
+    email: string;
+    nombre: string;
+    apellido: string;
+    fotoperfil: string | null;
+    emailVerified: boolean;
+  }) {
+    // 1. ¿Ya existe una identidad Google vinculada?
+    const existingIdentity = await this.authRepository.findIdentityByProvider(
+      'google',
+      profile.googleId,
+    );
+
+    if (existingIdentity) {
+      const user = await this.usersRepository.findProfileById(
+        existingIdentity.idusuario,
+      );
+      return this.login(user);
+    }
+
+    // 2. ¿Existe un usuario local con ese email?
+    const existingUser = await this.usersRepository.findByEmail(profile.email);
+
+    if (existingUser) {
+      // Solo vinculamos automáticamente si Google verifica el email (seguridad anti-takeover)
+      if (!profile.emailVerified) {
+        throw new Error(
+          'El email de Google no está verificado. No se puede vincular automáticamente.',
+        );
+      }
+
+      await this.authRepository.createOAuthIdentity({
+        idusuario: existingUser.idusuario,
+        provider: 'google',
+        provider_id: profile.googleId,
+        provider_email: profile.email,
+      });
+
+      return this.login(existingUser);
+    }
+
+    // 3. Usuario nuevo: crear cuenta + identidad Google
+    const roleId = await this.usersRepository.getDefaultRoleId();
+    const newUser = await this.usersRepository.createLocalUser({
+      email: profile.email,
+      password_hash: null, // cuenta OAuth, sin contraseña local
+      nombre: profile.nombre,
+      apellido: profile.apellido,
+      fotoperfil: profile.fotoperfil,
+      idrol: roleId,
+      email_verified: profile.emailVerified,
+      estado_cuenta: 'Activo',
+      estado: 'Activo',
+      puntostotales: 0,
+    });
+
+    await this.authRepository.createOAuthIdentity({
+      idusuario: newUser.idusuario,
+      provider: 'google',
+      provider_id: profile.googleId,
+      provider_email: profile.email,
+    });
+
+    return this.login(newUser);
+  }
 }

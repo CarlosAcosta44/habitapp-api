@@ -133,4 +133,46 @@ export class AuthRepository {
       );
     }
   }
+
+  // ─── OAuth Identities ────────────────────────────────────────────────────────
+
+  async findIdentityByProvider(
+    provider: string,
+    providerId: string,
+  ): Promise<{ idusuario: string } | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('identidades')
+      .select('idusuario')
+      .eq('provider', provider)
+      .eq('provider_id', providerId)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error buscando identidad OAuth: ${error.message}`,
+      );
+    }
+    return data || null;
+  }
+
+  async createOAuthIdentity(payload: {
+    idusuario: string;
+    provider: string;
+    provider_id: string;
+    provider_email: string | null;
+  }): Promise<void> {
+    const { error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('identidades')
+      .insert(payload);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error creando identidad OAuth: ${error.message}`,
+      );
+    }
+  }
 }
