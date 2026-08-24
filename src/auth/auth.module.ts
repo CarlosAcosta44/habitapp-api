@@ -13,6 +13,7 @@ import { MailModule } from '../mail/mail.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { FacebookStrategy } from './strategies/facebook.strategy';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     LocalStrategy,
     JwtStrategy,
     GoogleStrategy,
+    FacebookStrategy,
     JwtAuthGuard,
     RolesGuard,
   ],
