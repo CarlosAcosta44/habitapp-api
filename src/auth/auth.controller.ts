@@ -21,7 +21,9 @@ import { RegisterDto } from './dto/register.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
+import { FacebookOAuthGuard } from './guards/facebook-oauth.guard';
 import type { GoogleProfile } from './strategies/google.strategy';
+import type { FacebookProfile } from './strategies/facebook.strategy';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -115,6 +117,38 @@ export class AuthController {
     try {
       const loginResult =
         await this.authService.findOrCreateGoogleUser(profile);
+      this.setAuthCookies(
+        res,
+        loginResult.access_token,
+        loginResult.refresh_token,
+      );
+      res.redirect(`${frontendUrl}/dashboard`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'oauth_error';
+      res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(message)}`);
+    }
+  }
+
+  // ─── Facebook OAuth ────────────────────────────────────────────────────────
+
+  @Get('facebook')
+  @UseGuards(FacebookOAuthGuard)
+  @ApiOperation({ summary: 'Iniciar flujo OAuth con Facebook' })
+  @ApiResponse({ status: 302, description: 'Redirige a Facebook.' })
+  facebookAuth() {
+    // El guard de Passport intercepta este endpoint y redirige a Facebook
+  }
+
+  @Get('facebook/callback')
+  @UseGuards(FacebookOAuthGuard)
+  @ApiExcludeEndpoint()
+  async facebookAuthCallback(@Req() req: any, @Res() res: any) {
+    const profile = req.user as FacebookProfile;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    try {
+      const loginResult =
+        await this.authService.findOrCreateFacebookUser(profile);
       this.setAuthCookies(
         res,
         loginResult.access_token,

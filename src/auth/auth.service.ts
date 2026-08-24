@@ -174,7 +174,6 @@ export class AuthService {
 
   /**
    * Busca o crea un usuario a partir del perfil de Google.
-   * Seguridad: solo vincula automáticamente si el email está verificado por Google.
    */
   async findOrCreateGoogleUser(profile: {
     googleId: string;
@@ -184,10 +183,56 @@ export class AuthService {
     fotoperfil: string | null;
     emailVerified: boolean;
   }) {
-    // 1. ¿Ya existe una identidad Google vinculada?
+    return this.findOrCreateOAuthUser({
+      provider: 'google',
+      providerId: profile.googleId,
+      email: profile.email,
+      nombre: profile.nombre,
+      apellido: profile.apellido,
+      fotoperfil: profile.fotoperfil,
+      emailVerified: profile.emailVerified,
+    });
+  }
+
+  /**
+   * Busca o crea un usuario a partir del perfil de Facebook.
+   */
+  async findOrCreateFacebookUser(profile: {
+    facebookId: string;
+    email: string;
+    nombre: string;
+    apellido: string;
+    fotoperfil: string | null;
+    emailVerified: boolean;
+  }) {
+    return this.findOrCreateOAuthUser({
+      provider: 'facebook',
+      providerId: profile.facebookId,
+      email: profile.email,
+      nombre: profile.nombre,
+      apellido: profile.apellido,
+      fotoperfil: profile.fotoperfil,
+      emailVerified: profile.emailVerified,
+    });
+  }
+
+  /**
+   * Lógica compartida para encontrar o crear un usuario OAuth.
+   * Seguridad: solo vincula si emailVerified = true (anti account-takeover).
+   */
+  private async findOrCreateOAuthUser(opts: {
+    provider: 'google' | 'facebook' | 'apple';
+    providerId: string;
+    email: string;
+    nombre: string;
+    apellido: string;
+    fotoperfil: string | null;
+    emailVerified: boolean;
+  }) {
+    // 1. ¿Ya existe una identidad del proveedor vinculada?
     const existingIdentity = await this.authRepository.findIdentityByProvider(
-      'google',
-      profile.googleId,
+      opts.provider,
+      opts.providerId,
     );
 
     if (existingIdentity) {
@@ -198,36 +243,35 @@ export class AuthService {
     }
 
     // 2. ¿Existe un usuario local con ese email?
-    const existingUser = await this.usersRepository.findByEmail(profile.email);
+    const existingUser = await this.usersRepository.findByEmail(opts.email);
 
     if (existingUser) {
-      // Solo vinculamos automáticamente si Google verifica el email (seguridad anti-takeover)
-      if (!profile.emailVerified) {
+      if (!opts.emailVerified) {
         throw new Error(
-          'El email de Google no está verificado. No se puede vincular automáticamente.',
+          `El email de ${opts.provider} no está verificado. No se puede vincular automáticamente.`,
         );
       }
 
       await this.authRepository.createOAuthIdentity({
         idusuario: existingUser.idusuario,
-        provider: 'google',
-        provider_id: profile.googleId,
-        provider_email: profile.email,
+        provider: opts.provider,
+        provider_id: opts.providerId,
+        provider_email: opts.email,
       });
 
       return this.login(existingUser);
     }
 
-    // 3. Usuario nuevo: crear cuenta + identidad Google
+    // 3. Usuario nuevo: crear cuenta + identidad OAuth
     const roleId = await this.usersRepository.getDefaultRoleId();
     const newUser = await this.usersRepository.createLocalUser({
-      email: profile.email,
+      email: opts.email,
       password_hash: null, // cuenta OAuth, sin contraseña local
-      nombre: profile.nombre,
-      apellido: profile.apellido,
-      fotoperfil: profile.fotoperfil,
+      nombre: opts.nombre,
+      apellido: opts.apellido,
+      fotoperfil: opts.fotoperfil,
       idrol: roleId,
-      email_verified: profile.emailVerified,
+      email_verified: opts.emailVerified,
       estado_cuenta: 'Activo',
       estado: 'Activo',
       puntostotales: 0,
@@ -235,9 +279,9 @@ export class AuthService {
 
     await this.authRepository.createOAuthIdentity({
       idusuario: newUser.idusuario,
-      provider: 'google',
-      provider_id: profile.googleId,
-      provider_email: profile.email,
+      provider: opts.provider,
+      provider_id: opts.providerId,
+      provider_email: opts.email,
     });
 
     return this.login(newUser);
