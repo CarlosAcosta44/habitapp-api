@@ -217,11 +217,33 @@ export class AuthService {
   }
 
   /**
+   * Busca o crea un usuario a partir del perfil de Microsoft.
+   */
+  async findOrCreateMicrosoftUser(profile: {
+    microsoftId: string;
+    email: string;
+    nombre: string;
+    apellido: string;
+    fotoperfil: string | null;
+    emailVerified: boolean;
+  }) {
+    return this.findOrCreateOAuthUser({
+      provider: 'microsoft',
+      providerId: profile.microsoftId,
+      email: profile.email,
+      nombre: profile.nombre,
+      apellido: profile.apellido,
+      fotoperfil: profile.fotoperfil,
+      emailVerified: profile.emailVerified,
+    });
+  }
+
+  /**
    * Lógica compartida para encontrar o crear un usuario OAuth.
    * Seguridad: solo vincula si emailVerified = true (anti account-takeover).
    */
   private async findOrCreateOAuthUser(opts: {
-    provider: 'google' | 'facebook' | 'apple';
+    provider: 'google' | 'facebook' | 'microsoft';
     providerId: string;
     email: string;
     nombre: string;

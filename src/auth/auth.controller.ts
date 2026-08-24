@@ -22,8 +22,10 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
 import { FacebookOAuthGuard } from './guards/facebook-oauth.guard';
+import { MicrosoftOAuthGuard } from './guards/microsoft-oauth.guard';
 import type { GoogleProfile } from './strategies/google.strategy';
 import type { FacebookProfile } from './strategies/facebook.strategy';
+import type { MicrosoftProfile } from './strategies/microsoft.strategy';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -149,6 +151,38 @@ export class AuthController {
     try {
       const loginResult =
         await this.authService.findOrCreateFacebookUser(profile);
+      this.setAuthCookies(
+        res,
+        loginResult.access_token,
+        loginResult.refresh_token,
+      );
+      res.redirect(`${frontendUrl}/dashboard`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'oauth_error';
+      res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(message)}`);
+    }
+  }
+
+  // ─── Microsoft OAuth ───────────────────────────────────────────────────────
+
+  @Get('microsoft')
+  @UseGuards(MicrosoftOAuthGuard)
+  @ApiOperation({ summary: 'Iniciar flujo OAuth con Microsoft' })
+  @ApiResponse({ status: 302, description: 'Redirige a Microsoft.' })
+  microsoftAuth() {
+    // El guard de Passport intercepta este endpoint y redirige a Microsoft
+  }
+
+  @Get('microsoft/callback')
+  @UseGuards(MicrosoftOAuthGuard)
+  @ApiExcludeEndpoint()
+  async microsoftAuthCallback(@Req() req: any, @Res() res: any) {
+    const profile = req.user as MicrosoftProfile;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    try {
+      const loginResult =
+        await this.authService.findOrCreateMicrosoftUser(profile);
       this.setAuthCookies(
         res,
         loginResult.access_token,
