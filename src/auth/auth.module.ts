@@ -14,6 +14,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
+import { MicrosoftStrategy } from './strategies/microsoft.strategy';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
     JwtStrategy,
     GoogleStrategy,
     FacebookStrategy,
+    MicrosoftStrategy,
     JwtAuthGuard,
     RolesGuard,
   ],
