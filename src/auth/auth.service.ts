@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { OAuth2Client } from 'google-auth-library';
 import * as crypto from 'crypto';
 import { AuthRepository } from './repositories/auth.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
@@ -170,7 +171,41 @@ export class AuthService {
     }
   }
 
-  // ─── OAuth ─────────────────────────────────────────────────────────────────
+  // ─── OAuth Mobile ──────────────────────────────────────────────────────────
+
+  /**
+   * Verifica un ID Token de Google recibido desde la app móvil.
+   */
+  async verifyGoogleTokenMobile(idToken: string) {
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    if (!payload) throw new UnauthorizedException('Token de Google inválido');
+
+    return this.findOrCreateOAuthUser({
+      provider: 'google',
+      providerId: payload.sub,
+      email: payload.email,
+      nombre: payload.given_name || payload.name || 'Usuario',
+      apellido: payload.family_name || '',
+      fotoperfil: payload.picture || null,
+      emailVerified: payload.email_verified || false,
+    });
+  }
+
+  /**
+   * Verifica un Token de Apple recibido desde la app móvil.
+   */
+  async verifyAppleTokenMobile(identityToken: string) {
+    // TODO: Implementar verificación real del JWT de Apple usando apple-signin-auth
+    throw new Error('El login con Apple está en construcción en el backend.');
+  }
+
+  // ─── OAuth Web ─────────────────────────────────────────────────────────────
 
   /**
    * Busca o crea un usuario a partir del perfil de Google.

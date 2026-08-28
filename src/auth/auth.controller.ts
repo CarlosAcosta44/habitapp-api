@@ -8,6 +8,7 @@ import {
   Req,
   Res,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -99,7 +100,53 @@ export class AuthController {
     return { message: 'Sesión cerrada exitosamente' };
   }
 
-  // ─── Google OAuth ──────────────────────────────────────────────────────────
+  // ─── OAuth Mobile ──────────────────────────────────────────────────────────
+
+  @Post('google/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login con ID Token de Google desde App Móvil' })
+  @ApiResponse({ status: 200, description: 'Inicio de sesión exitoso' })
+  async googleAuthMobile(@Body('token') token: string, @Res({ passthrough: true }) res: any) {
+    if (!token) throw new BadRequestException('El token es requerido');
+    
+    const loginResult = await this.authService.verifyGoogleTokenMobile(token);
+    
+    this.setAuthCookies(
+      res,
+      loginResult.access_token,
+      loginResult.refresh_token,
+    );
+
+    return {
+      message: 'Inicio de sesión con Google exitoso',
+      access_token: loginResult.access_token,
+      user: loginResult.user,
+    };
+  }
+
+  @Post('apple/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login con Token de Apple desde App Móvil' })
+  @ApiResponse({ status: 200, description: 'Inicio de sesión exitoso' })
+  async appleAuthMobile(@Body('token') token: string, @Res({ passthrough: true }) res: any) {
+    if (!token) throw new BadRequestException('El token es requerido');
+    
+    const loginResult = await this.authService.verifyAppleTokenMobile(token);
+    
+    this.setAuthCookies(
+      res,
+      loginResult.access_token,
+      loginResult.refresh_token,
+    );
+
+    return {
+      message: 'Inicio de sesión con Apple exitoso',
+      access_token: loginResult.access_token,
+      user: loginResult.user,
+    };
+  }
+
+  // ─── Google OAuth Web ──────────────────────────────────────────────────────
 
   @Get('google')
   @UseGuards(GoogleOAuthGuard)
