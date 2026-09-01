@@ -97,6 +97,7 @@ export class AuthService {
     const roleId = await this.usersRepository.getDefaultRoleId();
 
     const newUser = await this.usersRepository.createLocalUser({
+      idusuario: uuidv4(),
       email: dto.email,
       password_hash: passwordHash,
       nombre: dto.nombre,
@@ -322,6 +323,7 @@ export class AuthService {
     // 3. Usuario nuevo: crear cuenta + identidad OAuth
     const roleId = await this.usersRepository.getDefaultRoleId();
     const newUser = await this.usersRepository.createLocalUser({
+      idusuario: uuidv4(),
       email: opts.email,
       password_hash: null, // cuenta OAuth, sin contraseña local
       nombre: opts.nombre,
