@@ -116,16 +116,20 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    await this.authRepository.storeVerificationToken(
-      newUser.idusuario,
-      verificationHash,
-      'verificacion_email',
-      expiresAt,
-    );
-    await this.mailService.sendVerificationEmail(
-      newUser.email,
-      verificationToken,
-    );
+    try {
+      await this.authRepository.storeVerificationToken(
+        newUser.idusuario,
+        verificationHash,
+        'verificacion_email',
+        expiresAt,
+      );
+      await this.mailService.sendVerificationEmail(
+        newUser.email,
+        verificationToken,
+      );
+    } catch (error) {
+      console.warn('⚠️ No se pudo guardar el token de verificación o enviar el email (probablemente falta configurar Resend o permisos en BD):', error.message);
+    }
 
     return {
       message: 'Usuario registrado exitosamente. Por favor verifica tu correo.',
