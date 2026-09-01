@@ -47,7 +47,7 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
+  async login(user: any): Promise<{ access_token: string; refresh_token: string; user: { id: string; email: string; nombre: string; apellido: string; rol: string } }> {
     const payload = {
       email: user.email,
       sub: user.idusuario,
@@ -176,7 +176,7 @@ export class AuthService {
   /**
    * Verifica un ID Token de Google recibido desde la app móvil.
    */
-  async verifyGoogleTokenMobile(idToken: string) {
+  async verifyGoogleTokenMobile(idToken: string): Promise<{ access_token: string; refresh_token: string; user: { id: string; email: string; nombre: string; apellido: string; rol: string } }> {
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     const ticket = await client.verifyIdToken({
       idToken,
@@ -189,7 +189,7 @@ export class AuthService {
     return this.findOrCreateOAuthUser({
       provider: 'google',
       providerId: payload.sub,
-      email: payload.email,
+      email: payload.email ?? '',
       nombre: payload.given_name || payload.name || 'Usuario',
       apellido: payload.family_name || '',
       fotoperfil: payload.picture || null,
@@ -200,7 +200,7 @@ export class AuthService {
   /**
    * Verifica un Token de Apple recibido desde la app móvil.
    */
-  async verifyAppleTokenMobile(identityToken: string) {
+  async verifyAppleTokenMobile(identityToken: string): Promise<{ access_token: string; refresh_token: string; user: { id: string; email: string; nombre: string; apellido: string; rol: string } }> {
     // TODO: Implementar verificación real del JWT de Apple usando apple-signin-auth
     throw new Error('El login con Apple está en construcción en el backend.');
   }
@@ -277,7 +277,7 @@ export class AuthService {
    * Lógica compartida para encontrar o crear un usuario OAuth.
    * Seguridad: solo vincula si emailVerified = true (anti account-takeover).
    */
-  private async findOrCreateOAuthUser(opts: {
+  private async findOrCreateOAuthUser(opts: { // eslint-disable-next-line @typescript-eslint/no-unused-vars
     provider: 'google' | 'facebook' | 'microsoft';
     providerId: string;
     email: string;
