@@ -67,12 +67,16 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.authRepository.storeRefreshToken(
-      user.idusuario,
-      refreshHash,
-      familyId,
-      expiresAt,
-    );
+    try {
+      await this.authRepository.storeRefreshToken(
+        user.idusuario,
+        refreshHash,
+        familyId,
+        expiresAt,
+      );
+    } catch (error) {
+      console.warn('⚠️ No se pudo guardar el refresh token (problema de permisos BD):', error.message);
+    }
 
     return {
       access_token: accessToken,
