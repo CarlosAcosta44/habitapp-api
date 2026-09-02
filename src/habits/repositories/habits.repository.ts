@@ -16,6 +16,7 @@ interface RawHabito {
   unidad_medida: string;
   idusuario: string;
   idcategoria: string;
+  dias_semana?: number[];
   categorias_habitos?: {
     idcategoria: string;
     nombre: string;
@@ -33,7 +34,7 @@ export class HabitsRepository {
 
   private readonly SELECT_WITH_CATEGORIA = `
     idhabito, nombre, descripcion, fechainicio, fechafin, estado,
-    puntos, meta_diaria, unidad_medida, idusuario, idcategoria,
+    puntos, meta_diaria, unidad_medida, idusuario, idcategoria, dias_semana,
     categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion)
   `;
 
@@ -50,6 +51,7 @@ export class HabitsRepository {
       unidadMedida: row.unidad_medida,
       idUsuario: row.idusuario,
       idCategoria: row.idcategoria,
+      diasSemana: row.dias_semana ?? [1, 2, 3, 4, 5, 6, 7],
       categoria: row.categorias_habitos
         ? {
             idCategoria: row.categorias_habitos.idcategoria,
@@ -103,7 +105,7 @@ export class HabitsRepository {
       .select(
         `
         idhabito, nombre, descripcion, fechainicio, fechafin, estado,
-        puntos, meta_diaria, unidad_medida, idusuario, idcategoria,
+        puntos, meta_diaria, unidad_medida, idusuario, idcategoria, dias_semana,
         categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion),
         registro_habitos(idregistro, completado, progreso_actual, puntos_ganados, observacion, fecha)
       `,
@@ -171,6 +173,7 @@ export class HabitsRepository {
     unidad_medida: string;
     idusuario: string;
     idcategoria: string;
+    dias_semana: number[];
   }) {
     const { data, error } = await this.db
       .from('habitos')

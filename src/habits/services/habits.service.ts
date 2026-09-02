@@ -56,6 +56,7 @@ export class HabitsService {
       unidad_medida: dto.unidadMedida ?? 'veces',
       idusuario: userId,
       idcategoria: dto.idCategoria,
+      dias_semana: dto.diasSemana ?? [1, 2, 3, 4, 5, 6, 7],
     });
   }
 
@@ -85,6 +86,7 @@ export class HabitsService {
     if (dto.estado !== undefined) dbUpdates.estado = dto.estado;
     if (dto.puntos !== undefined) dbUpdates.puntos = dto.puntos;
     if (dto.idCategoria !== undefined) dbUpdates.idcategoria = dto.idCategoria;
+    if (dto.diasSemana !== undefined) dbUpdates.dias_semana = dto.diasSemana;
 
     return this.habitsRepo.update(idHabito, dbUpdates);
   }

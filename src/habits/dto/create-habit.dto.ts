@@ -9,6 +9,7 @@ import {
   Max,
   MinLength,
   MaxLength,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -64,4 +65,12 @@ export class CreateHabitDto {
   @ApiProperty({ description: 'UUID de la categoría del hábito' })
   @IsUUID()
   idCategoria: string;
+
+  @ApiProperty({
+    description: 'Días de la semana en los que aplica el hábito (1=Lunes, 7=Domingo)',
+    example: [1, 2, 3, 4, 5, 6, 7],
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  diasSemana: number[];
 }
