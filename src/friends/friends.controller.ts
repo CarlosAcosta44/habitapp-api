@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, UseGuards, ParseUUIDPipe, Param, Delete } from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiOperation,
@@ -29,7 +19,7 @@ export class FriendsController {
   @Get()
   @ApiOperation({ summary: 'Obtener lista de amigos del usuario' })
   getFriends(@Req() req: any) {
-    return this.friendsService.getFriends(req.user.idusuario as string);
+    return this.friendsService.getFriends(req.user.userId as string);
   }
 
   @Get('suggestions')
@@ -38,7 +28,7 @@ export class FriendsController {
   getSuggestions(@Req() req: any, @Query('limit') limit?: string) {
     const parsedLimit = limit ? parseInt(limit, 10) : 12;
     return this.friendsService.getSuggestions(
-      req.user.idusuario as string,
+      req.user.userId as string,
       parsedLimit,
     );
   }
@@ -48,8 +38,29 @@ export class FriendsController {
   @ApiOperation({ summary: 'Agregar un nuevo amigo' })
   addFriend(@Body() dto: AddFriendDto, @Req() req: any) {
     return this.friendsService.addFriend(
-      req.user.idusuario as string,
+      req.user.userId as string,
       dto.targetUserId,
     );
+  }
+
+  @Post(':id/accept')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Aceptar solicitud de amistad' })
+  acceptRequest(@Param('id', ParseUUIDPipe) friendId: string, @Req() req: any) {
+    return { message: 'Solicitud aceptada (Stub)' };
+  }
+
+  @Post(':id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rechazar solicitud de amistad' })
+  rejectRequest(@Param('id', ParseUUIDPipe) friendId: string, @Req() req: any) {
+    return { message: 'Solicitud rechazada (Stub)' };
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Eliminar un amigo' })
+  removeFriend(@Param('id', ParseUUIDPipe) friendId: string, @Req() req: any) {
+    return { message: 'Amigo eliminado (Stub)' };
   }
 }

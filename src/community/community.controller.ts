@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Req, Put, ParseUUIDPipe } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -106,5 +98,23 @@ export class CommunityController {
   })
   getTrainers() {
     return this.communityService.getTrainers();
+  }
+
+  @Post('forums')
+  @ApiOperation({ summary: 'Crear un nuevo hilo en el foro' })
+  createForum(@Req() req: any, @Body() dto: any) {
+    return { message: 'Foro creado (Stub)' };
+  }
+
+  @Put('comments/:id')
+  @ApiOperation({ summary: 'Editar un comentario propio' })
+  updateComment(@Param('id', ParseUUIDPipe) commentId: string, @Req() req: any, @Body() dto: any) {
+    return { message: 'Comentario actualizado (Stub)' };
+  }
+
+  @Delete('comments/:id')
+  @ApiOperation({ summary: 'Eliminar un comentario propio' })
+  deleteComment(@Param('id', ParseUUIDPipe) commentId: string, @Req() req: any) {
+    return { message: 'Comentario eliminado (Stub)' };
   }
 }

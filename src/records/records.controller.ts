@@ -29,7 +29,7 @@ export class RecordsController {
     summary: 'Obtener historial completo de registros del usuario',
   })
   getHistorial(@Req() req: any) {
-    return this.recordsService.getHistorial(req.user.idusuario as string);
+    return this.recordsService.getHistorial(req.user.userId as string);
   }
 
   @Get('habito/:habitoId')
@@ -40,7 +40,7 @@ export class RecordsController {
   ) {
     return this.recordsService.getByHabito(
       habitoId,
-      req.user.idusuario as string,
+      req.user.userId as string,
     );
   }
 
@@ -50,7 +50,7 @@ export class RecordsController {
     @Param('habitoId', ParseUUIDPipe) habitoId: string,
     @Req() req: any,
   ) {
-    return this.recordsService.getRacha(habitoId, req.user.idusuario as string);
+    return this.recordsService.getRacha(habitoId, req.user.userId as string);
   }
 
   @Post('completar')
@@ -59,7 +59,7 @@ export class RecordsController {
   marcarCompletado(@Body() dto: CreateRecordDto, @Req() req: any) {
     return this.recordsService.marcarCompletado(
       dto,
-      req.user.idusuario as string,
+      req.user.userId as string,
     );
   }
 
@@ -72,7 +72,7 @@ export class RecordsController {
   ) {
     return this.recordsService.desmarcarCompletado(
       habitoId,
-      req.user.idusuario as string,
+      req.user.userId as string,
     );
   }
 
@@ -82,7 +82,7 @@ export class RecordsController {
   avanzarProgreso(@Body() dto: AvanzarProgresoDto, @Req() req: any) {
     return this.recordsService.avanzarProgreso(
       dto,
-      req.user.idusuario as string,
+      req.user.userId as string,
     );
   }
 }
