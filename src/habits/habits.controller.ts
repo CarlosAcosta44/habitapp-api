@@ -35,7 +35,7 @@ export class HabitsController {
   @Get('dashboard')
   @ApiOperation({ summary: 'Dashboard: hábitos activos con progreso de hoy' })
   getDashboard(@Req() req: any) {
-    return this.habitsService.getDashboard(req.user.idusuario as string);
+    return this.habitsService.getDashboard(req.user.userId as string);
   }
 
   @Get('categorias')
@@ -52,20 +52,20 @@ export class HabitsController {
     description: 'Filtrar por estado',
   })
   findAll(@Req() req: any, @Query('estado') estado?: string) {
-    return this.habitsService.findAll(req.user.idusuario as string, estado);
+    return this.habitsService.findAll(req.user.userId as string, estado);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un hábito por ID' })
   findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
-    return this.habitsService.findById(id, req.user.idusuario as string);
+    return this.habitsService.findById(id, req.user.userId as string);
   }
 
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo hábito' })
   @ApiResponse({ status: 201, description: 'Hábito creado.' })
   create(@Body() dto: CreateHabitDto, @Req() req: any) {
-    return this.habitsService.create(dto, req.user.idusuario as string);
+    return this.habitsService.create(dto, req.user.userId as string);
   }
 
   @Patch(':id')
@@ -75,20 +75,20 @@ export class HabitsController {
     @Body() dto: UpdateHabitDto,
     @Req() req: any,
   ) {
-    return this.habitsService.update(id, dto, req.user.idusuario as string);
+    return this.habitsService.update(id, dto, req.user.userId as string);
   }
 
   @Patch(':id/completar')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marcar un hábito como Completado' })
   completar(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
-    return this.habitsService.completar(id, req.user.idusuario as string);
+    return this.habitsService.completar(id, req.user.userId as string);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Eliminar un hábito (y sus registros)' })
   delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
-    return this.habitsService.delete(id, req.user.idusuario as string);
+    return this.habitsService.delete(id, req.user.userId as string);
   }
 }

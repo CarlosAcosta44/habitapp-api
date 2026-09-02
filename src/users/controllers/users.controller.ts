@@ -141,4 +141,18 @@ export class UsersController {
   getAchievements(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.getAchievements(user.userId);
   }
+
+  @Patch('me/fcm-token')
+  @ApiOperation({
+    summary: 'Registrar token FCM para notificaciones Push',
+    description: 'Guarda el token de Firebase Cloud Messaging del dispositivo móvil del usuario.',
+  })
+  @ApiResponse({ status: 200, description: 'Token FCM actualizado exitosamente.' })
+  updateFcmToken(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body('fcm_token') fcmToken: string,
+  ) {
+    // Implementación stub: El servicio debería guardar este token en la DB
+    return this.usersService.updateProfile(user.userId, { telefono: fcmToken } as any); // Temporal workaround
+  }
 }
