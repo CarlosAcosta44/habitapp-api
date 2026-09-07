@@ -10,6 +10,7 @@ import {
   ParseFilePipeBuilder,
   HttpStatus,
   Query,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -57,7 +58,7 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
   @ApiResponse({ status: 500, description: 'Error interno del servidor.' })
   getMe(@CurrentUser() user: AuthenticatedUser) {
-    return this.usersService.getProfile(user.userId);
+    return this.usersService.getProfile(user.userId, user.email);
   }
 
   @Patch('me')
@@ -110,8 +111,18 @@ export class UsersController {
         .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
     )
     file: Express.Multer.File,
+    @Req() req: any,
   ) {
-    return this.usersService.uploadAvatar(user.userId, file);
+    let token = null;
+    if (req.cookies && req.cookies['access_token']) {
+      token = req.cookies['access_token'];
+    } else if (req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+    return this.usersService.uploadAvatar(user.userId, file, token);
   }
 
   @Get('me/profile')

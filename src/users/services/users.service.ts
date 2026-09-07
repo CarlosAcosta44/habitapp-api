@@ -7,8 +7,8 @@ import { UsersRepository } from '../repositories/users.repository';
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  getProfile(userId: string) {
-    return this.usersRepository.findProfileById(userId);
+  getProfile(userId: string, email?: string) {
+    return this.usersRepository.findProfileById(userId, email);
   }
 
   listProfiles() {
@@ -33,8 +33,8 @@ export class UsersService {
     return this.usersRepository.updateRole(targetUserId, dto.nombrerol);
   }
 
-  uploadAvatar(userId: string, file: Express.Multer.File) {
-    return this.usersRepository.uploadAvatar(userId, file);
+  uploadAvatar(userId: string, file: Express.Multer.File, token?: string) {
+    return this.usersRepository.uploadAvatar(userId, file, token);
   }
 
   /** Resumen básico de perfil: nombre, fotoperfil, puntos */
