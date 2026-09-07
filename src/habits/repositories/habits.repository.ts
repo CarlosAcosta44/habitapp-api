@@ -126,6 +126,10 @@ export class HabitsRepository {
     return (data ?? []).map((row: any) => {
       const registros = row.registro_habitos ?? [];
       const registroHoy = registros.find((r: any) => r.fecha === hoy) ?? null;
+      const fechasCompletadas = registros
+        .filter((r: any) => r.completado)
+        .map((r: any) => r.fecha);
+
       return {
         ...this.mapToDomain(row),
         registroHoy: registroHoy
@@ -137,6 +141,7 @@ export class HabitsRepository {
               observacion: registroHoy.observacion,
             }
           : null,
+        fechasCompletadas,
       };
     });
   }
@@ -193,10 +198,10 @@ export class HabitsRepository {
     return this.mapToDomain(data);
   }
 
-  async update(idHabito: string, updates: Record<string, unknown>) {
+  async update(idHabito: string, payload: any) {
     const { data, error } = await this.db
       .from('habitos')
-      .update(updates)
+      .update(payload)
       .eq('idhabito', idHabito)
       .select(this.SELECT_WITH_CATEGORIA)
       .returns<RawHabito>()
@@ -208,6 +213,65 @@ export class HabitsRepository {
       );
     }
     return this.mapToDomain(data);
+  }
+
+  async getHabitStats(idHabito: string) {
+    // Buscar todos los registros de este hábito
+    const { data: records, error } = await this.db
+      .from('registro_habitos')
+      .select('*')
+      .eq('idhabito', idHabito)
+      .order('fecha', { ascending: false });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener registros del hábito: ${error.message}`,
+      );
+    }
+
+    // Calcular estadísticas
+    let rachaActual = 0;
+    let mejorRacha = 0;
+    let totalCumplido = 0;
+    let currentStreak = 0;
+
+    // Los records vienen ordenados de más reciente a más antiguo
+    // Para calcular racha actual, revisamos desde el principio (fechas recientes)
+    let checkingCurrentStreak = true;
+    for (const record of records) {
+      if (record.completado) {
+        if (checkingCurrentStreak) rachaActual++;
+        totalCumplido++;
+      } else {
+        checkingCurrentStreak = false;
+      }
+    }
+
+    // Para calcular mejor racha, necesitamos iterar en orden cronológico (de antiguo a reciente), o simplemente hacerlo aquí
+    for (let i = records.length - 1; i >= 0; i--) {
+      if (records[i].completado) {
+        currentStreak++;
+        if (currentStreak > mejorRacha) mejorRacha = currentStreak;
+      } else {
+        currentStreak = 0;
+      }
+    }
+
+    // Obtener los últimos 7 días (historialReciente)
+    // Asumimos que los registros se crean uno por día, tomamos los primeros 7 (que son los más recientes por el order descending)
+    const historialReciente = records.slice(0, 7).map(r => ({
+      fecha: r.fecha,
+      completado: r.completado,
+      progresoActual: r.progreso_actual,
+      puntosGanados: r.puntos_ganados,
+    })).reverse(); // Invertir para que el más reciente quede al final (L, M, M...)
+
+    return {
+      rachaActual,
+      mejorRacha,
+      totalCumplido,
+      historialReciente,
+    };
   }
 
   async delete(idHabito: string): Promise<void> {

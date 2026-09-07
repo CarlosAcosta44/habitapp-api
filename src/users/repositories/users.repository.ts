@@ -11,7 +11,7 @@ import { UserProfileRow } from '../entities/user-profile.entity';
 export class UsersRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async findProfileById(userId: string): Promise<UserProfileRow> {
+  async findProfileById(userId: string, email?: string): Promise<UserProfileRow> {
     const { data, error } = await this.supabaseService
       .getClient()
       .schema('gestion')
@@ -24,10 +24,24 @@ export class UsersRepository {
       throw new NotFoundException('Perfil de usuario no encontrado');
     }
 
+    // Obtener el puntaje del top 1
+    const { data: topUser } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .select('puntostotales')
+      .order('puntostotales', { ascending: false })
+      .limit(1)
+      .single();
+
+    const maxPuntos = topUser?.puntostotales || 0;
+    const puntosFaltantesTop1 = maxPuntos > data.puntostotales ? maxPuntos - data.puntostotales : 0;
+
     return {
       idusuario: data.idusuario,
       nombre: data.nombre,
       apellido: data.apellido,
+      correo: email || '',
       fotoperfil: data.fotoperfil,
       telefono: data.telefono,
       genero: data.genero,
@@ -35,6 +49,7 @@ export class UsersRepository {
       puntostotales: data.puntostotales,
       idrol: data.idrol,
       nombrerol: data.roles?.nombrerol || 'Usuario',
+      puntosFaltantesTop1,
     };
   }
 
@@ -132,13 +147,31 @@ export class UsersRepository {
   async uploadAvatar(
     userId: string,
     file: Express.Multer.File,
+    token?: string,
   ): Promise<{ url: string }> {
     const fileExt = file.originalname.split('.').pop() || 'png';
     const fileName = `${userId}_${Date.now()}.${fileExt}`;
-    const filePath = `profiles/${fileName}`;
+    const filePath = `${userId}/${fileName}`;
 
-    const { error: uploadError } = await this.supabaseService
-      .getClient()
+    // We MUST use a clean client with the service_role key explicitly in the Authorization header.
+    // Otherwise, the in-memory session set by JwtAuthGuard causes the client to act as the user,
+    // which fails because the bucket has no RLS policies allowing user inserts.
+    const { createClient } = require('@supabase/supabase-js');
+    const client = createClient(
+      process.env.SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      {
+        global: {
+          headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+        },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      },
+    );
+
+    const { error: uploadError } = await client
       .storage.from('avatars')
       .upload(filePath, file.buffer, {
         contentType: file.mimetype,
@@ -151,8 +184,7 @@ export class UsersRepository {
       );
     }
 
-    const { data } = this.supabaseService
-      .getClient()
+    const { data } = client
       .storage.from('avatars')
       .getPublicUrl(filePath);
 

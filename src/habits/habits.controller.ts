@@ -61,6 +61,12 @@ export class HabitsController {
     return this.habitsService.findById(id, req.user.userId as string);
   }
 
+  @Get(':id/stats')
+  @ApiOperation({ summary: 'Obtener un hábito por ID con estadísticas completas' })
+  findStats(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.habitsService.getHabitStats(id, req.user.userId as string);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo hábito' })
   @ApiResponse({ status: 201, description: 'Hábito creado.' })

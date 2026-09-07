@@ -34,10 +34,10 @@ export class UpdateHabitDto {
 
   @ApiPropertyOptional({
     description: 'Estado del hábito',
-    enum: ['Activo', 'Completado', 'Cancelado'],
+    enum: ['Activo', 'Completado', 'Cancelado', 'Archivado', 'Pausado'],
   })
   @IsOptional()
-  @IsIn(['Activo', 'Completado', 'Cancelado'])
+  @IsIn(['Activo', 'Completado', 'Cancelado', 'Archivado', 'Pausado'])
   estado?: string;
 
   @ApiPropertyOptional({ description: 'Puntos que otorga el hábito (1-100)' })
@@ -60,4 +60,15 @@ export class UpdateHabitDto {
   @IsArray()
   @IsNumber({}, { each: true })
   diasSemana?: number[];
+
+  @ApiPropertyOptional({ description: 'Meta diaria numérica', example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  metaDiaria?: number;
+
+  @ApiPropertyOptional({ description: 'Unidad de medida', example: 'veces' })
+  @IsOptional()
+  @IsString()
+  unidadMedida?: string;
 }

@@ -29,6 +29,42 @@ export class HabitsService {
     return habito;
   }
 
+  async getHabitStats(idHabito: string, userId: string) {
+    const habito = await this.findById(idHabito, userId);
+    const stats = await this.habitsRepo.getHabitStats(idHabito);
+
+    // Calcular tasa de éxito
+    // Días desde la creación hasta hoy
+    const fechaInicio = new Date(habito.fechaInicio);
+    const hoy = new Date();
+    
+    // Contar cuántos días de la semana seleccionados pasaron desde la creación
+    let diasEsperados = 0;
+    const current = new Date(fechaInicio);
+    while (current <= hoy) {
+      // 0 = Sunday, 1 = Monday... in JS. Our dias_semana is 1=Monday...7=Sunday.
+      let jsDay = current.getDay();
+      let habitDay = jsDay === 0 ? 7 : jsDay;
+      if (habito.diasSemana.includes(habitDay)) {
+        diasEsperados++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    const tasaExito = diasEsperados > 0 
+      ? Math.round((stats.totalCumplido / diasEsperados) * 100) 
+      : 100; // si no han pasado días esperados aún (ej. se creó hoy pero para un día futuro)
+
+    return {
+      ...habito, // Enviar también los datos del hábito
+      rachaActual: stats.rachaActual,
+      mejorRacha: stats.mejorRacha,
+      totalCumplido: stats.totalCumplido,
+      tasaExito: tasaExito > 100 ? 100 : tasaExito, // Capped at 100% just in case of multiple completions per day
+      historialReciente: stats.historialReciente,
+    };
+  }
+
   async getCategorias() {
     return this.habitsRepo.findCategorias();
   }
@@ -87,6 +123,8 @@ export class HabitsService {
     if (dto.puntos !== undefined) dbUpdates.puntos = dto.puntos;
     if (dto.idCategoria !== undefined) dbUpdates.idcategoria = dto.idCategoria;
     if (dto.diasSemana !== undefined) dbUpdates.dias_semana = dto.diasSemana;
+    if (dto.metaDiaria !== undefined) dbUpdates.meta_diaria = dto.metaDiaria;
+    if (dto.unidadMedida !== undefined) dbUpdates.unidad_medida = dto.unidadMedida;
 
     return this.habitsRepo.update(idHabito, dbUpdates);
   }
