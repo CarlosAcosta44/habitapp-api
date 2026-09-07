@@ -21,6 +21,7 @@ interface RawHabito {
     idcategoria: string;
     nombre: string;
     descripcion: string | null;
+    icono: string | null;
   } | null;
 }
 
@@ -35,7 +36,7 @@ export class HabitsRepository {
   private readonly SELECT_WITH_CATEGORIA = `
     idhabito, nombre, descripcion, fechainicio, fechafin, estado,
     puntos, meta_diaria, unidad_medida, idusuario, idcategoria, dias_semana,
-    categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion)
+    categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion, icono)
   `;
 
   mapToDomain(row: RawHabito) {
@@ -57,6 +58,7 @@ export class HabitsRepository {
             idCategoria: row.categorias_habitos.idcategoria,
             nombre: row.categorias_habitos.nombre,
             descripcion: row.categorias_habitos.descripcion,
+            icono: row.categorias_habitos.icono,
           }
         : null,
     };
@@ -106,7 +108,7 @@ export class HabitsRepository {
         `
         idhabito, nombre, descripcion, fechainicio, fechafin, estado,
         puntos, meta_diaria, unidad_medida, idusuario, idcategoria, dias_semana,
-        categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion),
+        categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion, icono),
         registro_habitos(idregistro, completado, progreso_actual, puntos_ganados, observacion, fecha)
       `,
       )
@@ -144,10 +146,10 @@ export class HabitsRepository {
       .getClient()
       .schema('seguimiento')
       .from('categorias_habitos')
-      .select('idcategoria, nombre, descripcion')
+      .select('idcategoria, nombre, descripcion, icono')
       .order('nombre', { ascending: true })
       .returns<
-        { idcategoria: string; nombre: string; descripcion: string | null }[]
+        { idcategoria: string; nombre: string; descripcion: string | null; icono: string | null }[]
       >();
 
     if (error) {
@@ -159,6 +161,7 @@ export class HabitsRepository {
       idCategoria: row.idcategoria,
       nombre: row.nombre,
       descripcion: row.descripcion,
+      icono: row.icono,
     }));
   }
 

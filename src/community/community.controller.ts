@@ -117,4 +117,11 @@ export class CommunityController {
   deleteComment(@Param('id', ParseUUIDPipe) commentId: string, @Req() req: any) {
     return { message: 'Comentario eliminado (Stub)' };
   }
+
+  @Get('retos')
+  @ApiOperation({ summary: 'Obtener lista de retos de la comunidad' })
+  @ApiResponse({ status: 200, description: 'Retos retornados con éxito.' })
+  getRetos() {
+    return this.communityService.getRetos();
+  }
 }

@@ -293,4 +293,36 @@ export class CommunityService {
       };
     });
   }
+
+  async getRetos() {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .schema('comunidad')
+      .from('retos')
+      .select(`
+        idreto,
+        titulo,
+        descripcion,
+        puntos_recompensa,
+        reto_tareas(idtarea, nombre, metrica_objetivo, unidad_medida, icono)
+      `)
+      .order('titulo', { ascending: true });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+    return (data || []).map((row: any) => ({
+      idReto: row.idreto,
+      titulo: row.titulo,
+      descripcion: row.descripcion,
+      puntosRecompensa: row.puntos_recompensa,
+      tareas: (row.reto_tareas || []).map((t: any) => ({
+        idTarea: t.idtarea,
+        nombre: t.nombre,
+        metricaObjetivo: t.metrica_objetivo,
+        unidadMedida: t.unidad_medida,
+        icono: t.icono,
+      }))
+    }));
+  }
 }
