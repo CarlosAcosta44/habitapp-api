@@ -12,7 +12,7 @@ export class UsersRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getUserStats(userId: string) {
-    const client = this.supabaseService.getClient();
+    const client = this.supabaseService.getClient().schema('seguimiento');
     
     // Get all active habits
     const { data: activeHabits, error: err1 } = await client
