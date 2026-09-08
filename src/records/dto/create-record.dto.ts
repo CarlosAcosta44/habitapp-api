@@ -1,4 +1,4 @@
-import { IsUUID, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsUUID, IsOptional, IsString, MaxLength, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AddFriendDto {
@@ -25,6 +25,7 @@ export class AvanzarProgresoDto {
   idHabito: string;
 
   @ApiProperty({ description: 'Cantidad a sumar al progreso actual' })
+  @IsNumber()
   cantidadASumar: number;
 
   @ApiPropertyOptional({ description: 'Observación' })

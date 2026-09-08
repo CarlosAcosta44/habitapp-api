@@ -119,7 +119,13 @@ export class HabitsService {
     if (dto.nombre !== undefined) dbUpdates.nombre = dto.nombre;
     if (dto.descripcion !== undefined) dbUpdates.descripcion = dto.descripcion;
     if (dto.fechaFin !== undefined) dbUpdates.fechafin = dto.fechaFin;
-    if (dto.estado !== undefined) dbUpdates.estado = dto.estado;
+    if (dto.estado !== undefined) {
+      if (dto.estado === 'Archivado' || dto.estado === 'Pausado') {
+        dbUpdates.estado = 'Inactivo';
+      } else {
+        dbUpdates.estado = dto.estado;
+      }
+    }
     if (dto.puntos !== undefined) dbUpdates.puntos = dto.puntos;
     if (dto.idCategoria !== undefined) dbUpdates.idcategoria = dto.idCategoria;
     if (dto.diasSemana !== undefined) dbUpdates.dias_semana = dto.diasSemana;
