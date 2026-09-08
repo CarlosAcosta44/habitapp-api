@@ -104,6 +104,7 @@ export class RecordsRepository {
     idusuario: string;
     fecha: string;
     observacion?: string;
+    metaDiaria: number;
   }) {
     const { data, error } = await this.db
       .from('registro_habitos')
@@ -113,6 +114,7 @@ export class RecordsRepository {
           idusuario: payload.idusuario,
           fecha: payload.fecha,
           completado: true,
+          progreso_actual: payload.metaDiaria,
           observacion: payload.observacion ?? null,
         },
         { onConflict: 'idhabito,idusuario,fecha' },
