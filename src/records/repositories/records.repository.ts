@@ -88,15 +88,15 @@ export class RecordsRepository {
       .eq('idhabito', habitoId)
       .eq('idusuario', usuarioId)
       .eq('fecha', hoy)
-      .returns<RawRegistro>()
-      .maybeSingle();
+      .returns<RawRegistro[]>()
+      .limit(1);
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       throw new InternalServerErrorException(
         `Error al buscar registro de hoy: ${error.message}`,
       );
     }
-    return data ? this.mapToDomain(data) : null;
+    return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
   async marcarCompletado(payload: {
@@ -120,15 +120,14 @@ export class RecordsRepository {
         { onConflict: 'idhabito,idusuario,fecha' },
       )
       .select('*')
-      .returns<RawRegistro>()
-      .single<RawRegistro>();
+      .returns<RawRegistro[]>();
 
     if (error) {
       throw new InternalServerErrorException(
         `Error al marcar hábito: ${error.message}`,
       );
     }
-    return this.mapToDomain(data);
+    return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
   async desmarcarCompletado(habitoId: string, usuarioId: string) {
@@ -141,15 +140,14 @@ export class RecordsRepository {
       .eq('idusuario', usuarioId)
       .eq('fecha', hoy)
       .select('*')
-      .returns<RawRegistro>()
-      .single<RawRegistro>();
+      .returns<RawRegistro[]>();
 
     if (error) {
       throw new InternalServerErrorException(
         `Error al desmarcar hábito: ${error.message}`,
       );
     }
-    return this.mapToDomain(data);
+    return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
   async avanzarProgreso(payload: {
@@ -161,15 +159,15 @@ export class RecordsRepository {
     observacion?: string;
   }) {
     // Buscar progreso actual del día
-    const { data: hoyReg } = await this.db
+    const { data: hoyRegs } = await this.db
       .from('registro_habitos')
       .select('progreso_actual')
       .eq('idhabito', payload.idhabito)
       .eq('idusuario', payload.idusuario)
       .eq('fecha', payload.fecha)
-      .maybeSingle();
+      .limit(1);
 
-    const currentProgress = (hoyReg as any)?.progreso_actual ?? 0;
+    const currentProgress = (hoyRegs && hoyRegs.length > 0) ? (hoyRegs[0] as any).progreso_actual : 0;
     const newProgress = Math.min(
       payload.metaDiaria,
       currentProgress + payload.cantidadASumar,
@@ -190,15 +188,14 @@ export class RecordsRepository {
         { onConflict: 'idhabito,idusuario,fecha' },
       )
       .select('*')
-      .returns<RawRegistro>()
-      .single<RawRegistro>();
+      .returns<RawRegistro[]>();
 
     if (error) {
       throw new InternalServerErrorException(
         `Error al avanzar progreso: ${error.message}`,
       );
     }
-    return this.mapToDomain(data);
+    return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
   async calcularRacha(habitoId: string, usuarioId: string) {
