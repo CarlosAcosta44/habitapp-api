@@ -72,7 +72,11 @@ export class UsersRepository {
       let jsDay = checkDate.getDay();
       let habDay = jsDay === 0 ? 7 : jsDay;
       
-      const scheduledForDay = activeHabits?.filter(h => h.dias_semana && h.dias_semana.includes(habDay)) || [];
+      const scheduledForDay = activeHabits?.filter(h => {
+        const startDate = new Date(h.fechainicio);
+        startDate.setHours(0,0,0,0);
+        return checkDate >= startDate && h.dias_semana && h.dias_semana.includes(habDay);
+      }) || [];
       
       if (scheduledForDay.length > 0) {
         const completedIds = recordsByDate[dStr] || [];
@@ -149,6 +153,7 @@ export class UsersRepository {
       idrol: data.idrol,
       nombrerol: data.roles?.nombrerol || 'Usuario',
       puntosFaltantesTop1,
+      zona_horaria: data.zona_horaria,
     };
   }
 
@@ -178,6 +183,7 @@ export class UsersRepository {
       puntostotales: u.puntostotales,
       idrol: u.idrol,
       nombrerol: u.roles?.nombrerol || 'Usuario',
+      zona_horaria: u.zona_horaria,
     }));
   }
 
@@ -192,6 +198,7 @@ export class UsersRepository {
         | 'telefono'
         | 'genero'
         | 'fechanacimiento'
+        | 'zona_horaria'
       >
     >,
   ): Promise<UserProfileRow> {
