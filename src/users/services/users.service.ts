@@ -7,6 +7,10 @@ import { UsersRepository } from '../repositories/users.repository';
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
+  async getUserStats(userId: string) {
+    return this.usersRepository.getUserStats(userId);
+  }
+
   getProfile(userId: string, email?: string) {
     return this.usersRepository.findProfileById(userId, email);
   }

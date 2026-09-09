@@ -130,6 +130,21 @@ export class HabitsRepository {
         .filter((r: any) => r.completado)
         .map((r: any) => r.fecha);
 
+      // Calcular racha actual
+      const sortedRegistros = [...registros].sort((a: any, b: any) => 
+        new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+      );
+      
+      let rachaActual = 0;
+      let checkingCurrentStreak = true;
+      for (const record of sortedRegistros) {
+        if (record.completado) {
+          if (checkingCurrentStreak) rachaActual++;
+        } else {
+          checkingCurrentStreak = false;
+        }
+      }
+
       return {
         ...this.mapToDomain(row),
         registroHoy: registroHoy
@@ -142,6 +157,7 @@ export class HabitsRepository {
             }
           : null,
         fechasCompletadas,
+        rachaActual,
       };
     });
   }

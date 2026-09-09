@@ -44,6 +44,18 @@ interface AuthenticatedUser {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('me/stats')
+  @ApiOperation({
+    summary: 'Obtener estadísticas del usuario',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estadísticas del usuario (tasa de éxito, racha, etc).',
+  })
+  getUserStats(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getUserStats(user.userId);
+  }
+
   @Get('me')
   @ApiOperation({
     summary: 'Obtener perfil del usuario autenticado',

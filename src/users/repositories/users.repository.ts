@@ -11,6 +11,105 @@ import { UserProfileRow } from '../entities/user-profile.entity';
 export class UsersRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  async getUserStats(userId: string) {
+    const client = this.supabaseService.getClient().schema('seguimiento');
+    
+    // Get all active habits
+    const { data: activeHabits, error: err1 } = await client
+      .from('habitos')
+      .select('idhabito, fechainicio, dias_semana')
+      .eq('idusuario', userId)
+      .eq('estado', 'Activo');
+
+    if (err1) throw new InternalServerErrorException('Error fetch habits');
+
+    // Get all completed records
+    const { data: records, error: err2 } = await client
+      .from('registro_habitos')
+      .select('idhabito, fecha')
+      .eq('idusuario', userId)
+      .eq('completado', true);
+      
+    if (err2) throw new InternalServerErrorException('Error fetch records');
+
+    const activeHabitsCount = activeHabits ? activeHabits.length : 0;
+    const uniqueDays = new Set(records?.map(r => r.fecha) || []);
+    const diasTotales = uniqueDays.size;
+
+    let totalEsperado = 0;
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    
+    if (activeHabits) {
+      for (const h of activeHabits) {
+        let hStart = new Date(h.fechainicio);
+        hStart.setHours(0,0,0,0);
+        let current = new Date(hStart);
+        while (current <= hoy) {
+          let jsDay = current.getDay();
+          let habDay = jsDay === 0 ? 7 : jsDay;
+          if (h.dias_semana.includes(habDay)) totalEsperado++;
+          current.setDate(current.getDate() + 1);
+        }
+      }
+    }
+    const totalCumplido = records?.length || 0;
+    const tasaExito = totalEsperado > 0 ? Math.min(100, Math.round((totalCumplido / totalEsperado) * 100)) : 100;
+
+    let rachaActual = 0;
+    const recordsByDate: Record<string, string[]> = {};
+    if (records) {
+      for (const r of records) {
+        if (!recordsByDate[r.fecha]) recordsByDate[r.fecha] = [];
+        recordsByDate[r.fecha].push(r.idhabito);
+      }
+    }
+
+    let checkDate = new Date();
+    let firstCheck = true;
+    while (true) {
+      const dStr = checkDate.toISOString().split('T')[0];
+      let jsDay = checkDate.getDay();
+      let habDay = jsDay === 0 ? 7 : jsDay;
+      
+      const scheduledForDay = activeHabits?.filter(h => h.dias_semana && h.dias_semana.includes(habDay)) || [];
+      
+      if (scheduledForDay.length > 0) {
+        const completedIds = recordsByDate[dStr] || [];
+        let allCompleted = true;
+        for (const h of scheduledForDay) {
+          if (!completedIds.includes(h.idhabito)) {
+            allCompleted = false;
+            break;
+          }
+        }
+        
+        if (allCompleted) {
+          rachaActual++;
+        } else {
+          if (!firstCheck) break; 
+        }
+      }
+      
+      checkDate.setDate(checkDate.getDate() - 1);
+      firstCheck = false;
+
+      if (activeHabits && activeHabits.length > 0) {
+        const oldestHabitDate = new Date(Math.min(...activeHabits.map(h => new Date(h.fechainicio).getTime())));
+        if (checkDate < oldestHabitDate) break;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      activeHabitsCount,
+      tasaExito,
+      diasTotales,
+      rachaActual
+    };
+  }
+
   async findProfileById(userId: string, email?: string): Promise<UserProfileRow> {
     const { data, error } = await this.supabaseService
       .getClient()

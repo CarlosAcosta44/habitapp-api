@@ -40,17 +40,12 @@ export class RecordsService {
 
     const hoy = new Date().toISOString().split('T')[0];
 
-    // Verificar si ya fue completado hoy
-    const registroHoy = await this.recordsRepo.findHoy(dto.idHabito, userId);
-    if (registroHoy?.completado) {
-      throw new BadRequestException('Este hábito ya fue completado hoy');
-    }
-
     return this.recordsRepo.marcarCompletado({
       idhabito: dto.idHabito,
       idusuario: userId,
       fecha: hoy,
       observacion: dto.observacion,
+      metaDiaria: habito.metaDiaria,
     });
   }
 
