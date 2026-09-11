@@ -177,11 +177,11 @@ export class ReportsService {
           const rate = stats.expected > 0 ? (stats.completed / stats.expected) * 100 : 0;
           if (rate > maxRate && stats.expected > 0) {
             maxRate = rate;
-            masConstante = { nombre: h.titulo, racha: stats.currentStreak, rate: Math.round(rate) };
+            masConstante = { nombre: h.nombre, racha: stats.currentStreak, rate: Math.round(rate) };
           }
           if (rate < minRate && stats.expected > 0) {
             minRate = rate;
-            oportunidadMejora = { nombre: h.titulo, rate: Math.round(rate) };
+            oportunidadMejora = { nombre: h.nombre, rate: Math.round(rate) };
           }
         });
       }
@@ -215,7 +215,7 @@ export class ReportsService {
       const { data: habitos, error } = await client
         .schema('seguimiento')
         .from('habitos')
-        .select('idhabito, titulo, descripcion, color')
+        .select('idhabito, nombre, descripcion, color')
         .eq('idusuario', userId)
         .eq('estado', 'Activo');
 
@@ -223,7 +223,7 @@ export class ReportsService {
 
       return habitos.map((h: any) => ({
         idHabito: h.idhabito,
-        nombre: h.titulo,
+        nombre: h.nombre,
         porcentajeCambio: '+5%',
         descripcion: h.descripcion || '',
         progreso: 50,
