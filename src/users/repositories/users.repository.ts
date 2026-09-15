@@ -2,6 +2,8 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { RoleName } from '../dto/user-profile.dto';
@@ -9,6 +11,8 @@ import { UserProfileRow } from '../entities/user-profile.entity';
 
 @Injectable()
 export class UsersRepository {
+  private readonly logger = new Logger(UsersRepository.name);
+
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getUserStats(userId: string) {
@@ -248,6 +252,19 @@ export class UsersRepository {
     }
 
     return this.findProfileById(userId);
+  }
+  async updateFcmToken(userId: string, token: string): Promise<void> {
+    const { error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .update({ fcm_token: token })
+      .eq('idusuario', userId);
+
+    if (error) {
+      this.logger.error(`Error updating fcm_token for user ${userId}:`, error.message);
+      throw new InternalServerErrorException('Error al actualizar el token FCM');
+    }
   }
 
   async uploadAvatar(

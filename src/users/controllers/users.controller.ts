@@ -175,7 +175,6 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @Body('fcm_token') fcmToken: string,
   ) {
-    // Implementación stub: El servicio debería guardar este token en la DB
-    return this.usersService.updateProfile(user.userId, { telefono: fcmToken } as any); // Temporal workaround
+    return this.usersService.updateFcmToken(user.userId, fcmToken);
   }
 }
