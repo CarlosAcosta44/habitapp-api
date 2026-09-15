@@ -41,6 +41,10 @@ export class UsersService {
     return this.usersRepository.uploadAvatar(userId, file, token);
   }
 
+  updateFcmToken(userId: string, fcmToken: string) {
+    return this.usersRepository.updateFcmToken(userId, fcmToken);
+  }
+
   /** Resumen básico de perfil: nombre, fotoperfil, puntos */
   getSimpleProfile(userId: string) {
     return this.usersRepository.getSimpleProfile(userId);
