@@ -2,21 +2,26 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
-  Body,
   Param,
+  Body,
   UseGuards,
+  Req,
+  ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CommunityService } from './community.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
 import { CreateCommentDto, ToggleReactionDto } from './dto/community.dto';
+
+interface AuthenticatedUser {
+  userId: string;
+  email: string;
+  role: string;
+}
 
 @ApiTags('community')
 @ApiBearerAuth('supabase-jwt')
@@ -104,7 +109,42 @@ export class CommunityController {
     status: 200,
     description: 'Entrenadores retornados con éxito.',
   })
-  getTrainers() {
-    return this.communityService.getTrainers();
+  getTrainers(
+    @Query('lat') lat?: number,
+    @Query('lng') lng?: number,
+  ) {
+    return this.communityService.getTrainers(lat, lng);
+  }
+
+  @Post('forums')
+  @ApiOperation({ summary: 'Crear un nuevo hilo en el foro' })
+  createForum(@Req() req: any, @Body() dto: any) {
+    return { message: 'Foro creado (Stub)' };
+  }
+
+  @Put('comments/:id')
+  @ApiOperation({ summary: 'Editar un comentario propio' })
+  updateComment(@Param('id', ParseUUIDPipe) commentId: string, @Req() req: any, @Body() dto: any) {
+    return { message: 'Comentario actualizado (Stub)' };
+  }
+
+  @Delete('comments/:id')
+  @ApiOperation({ summary: 'Eliminar un comentario propio' })
+  deleteComment(@Param('id', ParseUUIDPipe) commentId: string, @Req() req: any) {
+    return { message: 'Comentario eliminado (Stub)' };
+  }
+
+  @Get('retos')
+  @ApiOperation({ summary: 'Obtener lista de retos de la comunidad' })
+  @ApiResponse({ status: 200, description: 'Retos retornados con éxito.' })
+  getRetos() {
+    return this.communityService.getRetos();
+  }
+
+  @Post('retos/:id/join')
+  @ApiOperation({ summary: 'Unirse a un reto' })
+  @ApiResponse({ status: 201, description: 'Te has unido al reto.' })
+  joinReto(@Param('id', ParseUUIDPipe) retoId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.communityService.joinReto(retoId, user.userId);
   }
 }

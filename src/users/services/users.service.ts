@@ -7,8 +7,12 @@ import { UsersRepository } from '../repositories/users.repository';
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  getProfile(userId: string) {
-    return this.usersRepository.findProfileById(userId);
+  async getUserStats(userId: string) {
+    return this.usersRepository.getUserStats(userId);
+  }
+
+  getProfile(userId: string, email?: string) {
+    return this.usersRepository.findProfileById(userId, email);
   }
 
   listProfiles() {
@@ -33,7 +37,26 @@ export class UsersService {
     return this.usersRepository.updateRole(targetUserId, dto.nombrerol);
   }
 
-  uploadAvatar(userId: string, file: Express.Multer.File) {
-    return this.usersRepository.uploadAvatar(userId, file);
+  uploadAvatar(userId: string, file: Express.Multer.File, token?: string) {
+    return this.usersRepository.uploadAvatar(userId, file, token);
+  }
+
+  updateFcmToken(userId: string, fcmToken: string) {
+    return this.usersRepository.updateFcmToken(userId, fcmToken);
+  }
+
+  /** Resumen básico de perfil: nombre, fotoperfil, puntos */
+  getSimpleProfile(userId: string) {
+    return this.usersRepository.getSimpleProfile(userId);
+  }
+
+  /** Historial de puntos del usuario */
+  getPointsHistory(userId: string, limit: number) {
+    return this.usersRepository.getPointsHistory(userId, limit);
+  }
+
+  /** Logros desbloqueados por el usuario */
+  getAchievements(userId: string) {
+    return this.usersRepository.getAchievements(userId);
   }
 }

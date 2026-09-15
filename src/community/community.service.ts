@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -245,7 +250,7 @@ export class CommunityService {
     }));
   }
 
-  async getTrainers() {
+  async getTrainers(lat?: number, lng?: number) {
     const client = this.supabaseService.getClient();
     const { data, error } = await client
       .schema('seguimiento')
@@ -255,10 +260,11 @@ export class CommunityService {
         identrenador,
         idusuario,
         especialidad,
-        certificacion
+        certificacion,
+        latitud,
+        longitud
       `,
-      )
-      .limit(6);
+      );
 
     if (error) throw new InternalServerErrorException(error.message);
 
@@ -281,8 +287,18 @@ export class CommunityService {
       }
     }
 
-    return (data || []).map((row: any) => {
+    let trainers = (data || []).map((row: any) => {
       const user = usuariosMap[row.idusuario] || {};
+      
+      // Calculate a dummy distance if lat/lng are provided, otherwise null
+      let distance = null;
+      if (lat != null && lng != null && row.latitud != null && row.longitud != null) {
+        // Haversine formula approximation or simple euclidean for demo
+        const dx = lat - row.latitud;
+        const dy = lng - row.longitud;
+        distance = Math.sqrt(dx * dx + dy * dy) * 111.32; // Approx distance in km
+      }
+
       return {
         idEntrenador: row.identrenador,
         nombre: user.nombre ?? '',
@@ -290,7 +306,62 @@ export class CommunityService {
         fotoPerfil: user.fotoperfil ?? null,
         especialidad: row.especialidad,
         certificacion: row.certificacion,
+        distanciaKm: distance ? parseFloat(distance.toFixed(1)) : null,
       };
     });
+
+    if (lat != null && lng != null) {
+      trainers = trainers.sort((a: any, b: any) => (a.distanciaKm || 9999) - (b.distanciaKm || 9999));
+    }
+
+    return trainers.slice(0, 20); // Return top 20
+  }
+
+  async getRetos() {
+    const client = this.supabaseService.getClient();
+    const { data, error } = await client
+      .schema('comunidad')
+      .from('retos')
+      .select(`
+        idreto,
+        titulo,
+        descripcion,
+        puntos_recompensa,
+        reto_tareas(idtarea, nombre, metrica_objetivo, unidad_medida, icono)
+      `)
+      .order('titulo', { ascending: true });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+    return (data || []).map((row: any) => ({
+      idReto: row.idreto,
+      titulo: row.titulo,
+      descripcion: row.descripcion,
+      puntosRecompensa: row.puntos_recompensa,
+      tareas: (row.reto_tareas || []).map((t: any) => ({
+        idTarea: t.idtarea,
+        nombre: t.nombre,
+        metricaObjetivo: t.metrica_objetivo,
+        unidadMedida: t.unidad_medida,
+        icono: t.icono,
+      }))
+    }));
+  }
+
+  async joinReto(retoId: string, userId: string) {
+    const client = this.supabaseService.getClient();
+    const { error } = await client
+      .schema('comunidad')
+      .from('usuario_reto')
+      .insert({ idreto: retoId, idusuario: userId });
+
+    if (error) {
+      if (error.code === '23505') {
+        throw new BadRequestException('Ya estás unido a este reto');
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+    return { message: 'Te has unido al reto exitosamente' };
   }
 }

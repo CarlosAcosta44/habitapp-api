@@ -12,6 +12,9 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { AdminModule } from './admin/admin.module';
 import { CommunityModule } from './community/community.module';
+import { HabitsModule } from './habits/habits.module';
+import { RecordsModule } from './records/records.module';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -33,6 +36,9 @@ import { CommunityModule } from './community/community.module';
     ReportsModule,
     AdminModule,
     CommunityModule,
+    HabitsModule,
+    RecordsModule,
+    FriendsModule,
   ],
   controllers: [],
   providers: [
