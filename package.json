@@ -9,8 +9,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "build": "rimraf dist && nest build",
-    "postinstall": "npm run build",
+    "build": "rimraf dist *.tsbuildinfo && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
