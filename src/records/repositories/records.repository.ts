@@ -16,6 +16,12 @@ interface RawRegistro {
 export class RecordsRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  private getLocalHoy(tzOffset: number): string {
+    const utcNow = new Date();
+    const localTime = new Date(utcNow.getTime() + tzOffset * 60000);
+    return localTime.toISOString().split('T')[0];
+  }
+
   private get db() {
     return this.supabaseService.getClient().schema('seguimiento');
   }
@@ -79,8 +85,8 @@ export class RecordsRepository {
     }));
   }
 
-  async findHoy(habitoId: string, usuarioId: string) {
-    const hoy = new Date().toISOString().split('T')[0];
+  async findHoy(habitoId: string, usuarioId: string, tzOffset: number = 0) {
+    const hoy = this.getLocalHoy(tzOffset);
 
     const { data, error } = await this.db
       .from('registro_habitos')
@@ -99,20 +105,24 @@ export class RecordsRepository {
     return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
-  async marcarCompletado(payload: {
-    idhabito: string;
-    idusuario: string;
-    fecha: string;
-    observacion?: string;
-    metaDiaria: number;
-  }) {
+  async marcarCompletado(
+    payload: {
+      idhabito: string;
+      idusuario: string;
+      fecha: string;
+      observacion?: string;
+      metaDiaria: number;
+    },
+    tzOffset: number = 0,
+  ) {
+    const hoy = this.getLocalHoy(tzOffset);
     const { data, error } = await this.db
       .from('registro_habitos')
       .upsert(
         {
           idhabito: payload.idhabito,
           idusuario: payload.idusuario,
-          fecha: payload.fecha,
+          fecha: hoy,
           completado: true,
           progreso_actual: payload.metaDiaria,
           observacion: payload.observacion ?? null,
@@ -130,8 +140,8 @@ export class RecordsRepository {
     return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
-  async desmarcarCompletado(habitoId: string, usuarioId: string) {
-    const hoy = new Date().toISOString().split('T')[0];
+  async desmarcarCompletado(habitoId: string, usuarioId: string, tzOffset: number = 0) {
+    const hoy = this.getLocalHoy(tzOffset);
 
     const { data, error } = await this.db
       .from('registro_habitos')
@@ -150,21 +160,25 @@ export class RecordsRepository {
     return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
-  async avanzarProgreso(payload: {
-    idhabito: string;
-    idusuario: string;
-    fecha: string;
-    cantidadASumar: number;
-    metaDiaria: number;
-    observacion?: string;
-  }) {
+  async avanzarProgreso(
+    payload: {
+      idhabito: string;
+      idusuario: string;
+      fecha: string;
+      cantidadASumar: number;
+      metaDiaria: number;
+      observacion?: string;
+    },
+    tzOffset: number = 0,
+  ) {
+    const hoy = this.getLocalHoy(tzOffset);
     // Buscar progreso actual del día
     const { data: hoyRegs } = await this.db
       .from('registro_habitos')
       .select('progreso_actual')
       .eq('idhabito', payload.idhabito)
       .eq('idusuario', payload.idusuario)
-      .eq('fecha', payload.fecha)
+      .eq('fecha', hoy)
       .limit(1);
 
     const currentProgress = (hoyRegs && hoyRegs.length > 0) ? (hoyRegs[0] as any).progreso_actual : 0;
@@ -180,7 +194,7 @@ export class RecordsRepository {
         {
           idhabito: payload.idhabito,
           idusuario: payload.idusuario,
-          fecha: payload.fecha,
+          fecha: hoy,
           completado,
           progreso_actual: newProgress,
           observacion: payload.observacion ?? null,
@@ -198,7 +212,7 @@ export class RecordsRepository {
     return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
-  async calcularRacha(habitoId: string, usuarioId: string) {
+  async calcularRacha(habitoId: string, usuarioId: string, tzOffset: number = 0) {
     const { data, error } = await this.db
       .from('registro_habitos')
       .select('fecha, completado')
@@ -226,15 +240,25 @@ export class RecordsRepository {
       };
     }
 
+    const hoyStr = this.getLocalHoy(tzOffset);
+    const ayerDate = new Date(new Date().getTime() + tzOffset * 60000 - 86400000);
+    const ayerStr = ayerDate.toISOString().split('T')[0];
+
     let rachaActual = 0;
-    const hoy = new Date();
-    for (let i = 0; i < registros.length; i++) {
-      const fechaEsperada = new Date(hoy);
-      fechaEsperada.setDate(hoy.getDate() - i);
-      if (registros[i].fecha === fechaEsperada.toISOString().split('T')[0]) {
-        rachaActual++;
-      } else {
-        break;
+    
+    // Si el registro más reciente no es ni hoy ni ayer, la racha actual se rompió (es 0).
+    if (registros[0].fecha !== hoyStr && registros[0].fecha !== ayerStr) {
+      rachaActual = 0;
+    } else {
+      // La racha está viva. Empezamos a contar desde la fecha del registro más reciente.
+      const fechaBase = new Date(registros[0].fecha + 'T00:00:00Z'); 
+      for (let i = 0; i < registros.length; i++) {
+        const fechaEsperada = new Date(fechaBase.getTime() - i * 86400000);
+        if (registros[i].fecha === fechaEsperada.toISOString().split('T')[0]) {
+          rachaActual++;
+        } else {
+          break;
+        }
       }
     }
 
