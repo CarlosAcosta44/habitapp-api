@@ -30,7 +30,7 @@ export class RecordsService {
     return this.recordsRepo.findByUsuarioId(userId);
   }
 
-  async marcarCompletado(dto: CreateRecordDto, userId: string) {
+  async marcarCompletado(dto: CreateRecordDto, userId: string, tzOffset: number = 0) {
     // Verificar ownership del hábito
     const habito = await this.habitsRepo.findById(dto.idHabito);
     if (!habito)
@@ -38,25 +38,26 @@ export class RecordsService {
     if (habito.idUsuario !== userId)
       throw new ForbiddenException('Acceso denegado');
 
-    const hoy = new Date().toISOString().split('T')[0];
-
-    return this.recordsRepo.marcarCompletado({
-      idhabito: dto.idHabito,
-      idusuario: userId,
-      fecha: hoy,
-      observacion: dto.observacion,
-      metaDiaria: habito.metaDiaria,
-    });
+    return this.recordsRepo.marcarCompletado(
+      {
+        idhabito: dto.idHabito,
+        idusuario: userId,
+        fecha: '', // Calculated in repo
+        observacion: dto.observacion,
+        metaDiaria: habito.metaDiaria,
+      },
+      tzOffset,
+    );
   }
 
-  async desmarcarCompletado(habitoId: string, userId: string) {
+  async desmarcarCompletado(habitoId: string, userId: string, tzOffset: number = 0) {
     const habito = await this.habitsRepo.findById(habitoId);
     if (!habito)
       throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
     if (habito.idUsuario !== userId)
       throw new ForbiddenException('Acceso denegado');
 
-    const registroHoy = await this.recordsRepo.findHoy(habitoId, userId);
+    const registroHoy = await this.recordsRepo.findHoy(habitoId, userId, tzOffset);
     if (!registroHoy) {
       throw new BadRequestException('No hay registro de hoy para desmarcar');
     }
@@ -66,10 +67,10 @@ export class RecordsService {
       );
     }
 
-    return this.recordsRepo.desmarcarCompletado(habitoId, userId);
+    return this.recordsRepo.desmarcarCompletado(habitoId, userId, tzOffset);
   }
 
-  async avanzarProgreso(dto: AvanzarProgresoDto, userId: string) {
+  async avanzarProgreso(dto: AvanzarProgresoDto, userId: string, tzOffset: number = 0) {
     const habito = await this.habitsRepo.findById(dto.idHabito);
     if (!habito)
       throw new NotFoundException(`Hábito ${dto.idHabito} no encontrado`);
@@ -82,25 +83,26 @@ export class RecordsService {
       );
     }
 
-    const hoy = new Date().toISOString().split('T')[0];
-
-    return this.recordsRepo.avanzarProgreso({
-      idhabito: dto.idHabito,
-      idusuario: userId,
-      fecha: hoy,
-      cantidadASumar: dto.cantidadASumar,
-      metaDiaria: habito.metaDiaria,
-      observacion: dto.observacion,
-    });
+    return this.recordsRepo.avanzarProgreso(
+      {
+        idhabito: dto.idHabito,
+        idusuario: userId,
+        fecha: '', // Calculated in repo
+        cantidadASumar: dto.cantidadASumar,
+        metaDiaria: habito.metaDiaria,
+        observacion: dto.observacion,
+      },
+      tzOffset,
+    );
   }
 
-  async getRacha(habitoId: string, userId: string) {
+  async getRacha(habitoId: string, userId: string, tzOffset: number = 0) {
     const habito = await this.habitsRepo.findById(habitoId);
     if (!habito)
       throw new NotFoundException(`Hábito ${habitoId} no encontrado`);
     if (habito.idUsuario !== userId)
       throw new ForbiddenException('Acceso denegado');
 
-    return this.recordsRepo.calcularRacha(habitoId, userId);
+    return this.recordsRepo.calcularRacha(habitoId, userId, tzOffset);
   }
 }
