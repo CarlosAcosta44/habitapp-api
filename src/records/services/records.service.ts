@@ -76,9 +76,9 @@ export class RecordsService {
     if (habito.idUsuario !== userId)
       throw new ForbiddenException('Acceso denegado');
 
-    if (dto.cantidadASumar <= 0) {
+    if (dto.cantidadASumar === 0) {
       throw new BadRequestException(
-        'La cantidad a sumar debe ser mayor a cero',
+        'La cantidad a sumar/restar no puede ser cero',
       );
     }
 
