@@ -42,14 +42,15 @@ export class ReportsService {
         .single();
       if (profileError) throw new Error(`Profile error: ${profileError.message}`);
 
-      // 2. Obtener hábitos activos
-      const { data: activeHabits, error: habitsError } = await client
+      // 2. Obtener TODOS los hábitos (Activos e Inactivos) para calcular historial real
+      const { data: allHabits, error: habitsError } = await client
         .schema('seguimiento')
         .from('habitos')
-        .select('*')
-        .eq('idusuario', userId)
-        .eq('estado', 'Activo');
+        .select('idhabito, fechainicio, dias_semana, estado, nombre')
+        .eq('idusuario', userId);
       if (habitsError) throw new Error(`Habits error: ${habitsError.message}`);
+
+      const activeHabits = allHabits.filter(h => h.estado === 'Activo');
 
       // 3. Obtener registros de hábitos completados (hasta 1 año para cálculos)
       const oneYearAgo = new Date(today);
@@ -94,8 +95,8 @@ export class ReportsService {
         const periodStartDate = new Date(today);
         periodStartDate.setDate(today.getDate() - periodDays + 1);
 
-        // Procesar días desde el más antiguo hasta hoy
-        const oldestHabitDate = new Date(Math.min(...activeHabits.map(h => new Date(h.fechainicio).getTime())));
+        // Procesar días desde el más antiguo hasta hoy usando TODOS los hábitos
+        const oldestHabitDate = new Date(Math.min(...allHabits.map(h => new Date(h.fechainicio).getTime())));
         let currentDate = new Date(oldestHabitDate);
         currentDate.setHours(0,0,0,0);
 
@@ -110,13 +111,17 @@ export class ReportsService {
           let allCompletedForDay = true;
           let anyScheduled = false;
 
-          for (const h of activeHabits) {
+          for (const h of allHabits) {
             const hStart = new Date(h.fechainicio);
             hStart.setHours(0,0,0,0);
             
             if (currentDate >= hStart && h.dias_semana && h.dias_semana.includes(habDay)) {
               anyScheduled = true;
-              statsByHabit[h.idhabito].expected++;
+              
+              if (h.estado === 'Activo') {
+                statsByHabit[h.idhabito].expected++;
+              }
+              
               const isCompleted = completedIds.includes(h.idhabito);
               
               if (currentDate >= periodStartDate) {
@@ -125,14 +130,17 @@ export class ReportsService {
               }
 
               if (isCompleted) {
-                statsByHabit[h.idhabito].completed++;
-                statsByHabit[h.idhabito].currentStreak++;
-                statsByHabit[h.idhabito].maxStreak = Math.max(statsByHabit[h.idhabito].maxStreak, statsByHabit[h.idhabito].currentStreak);
-              } else if (currentDate < today || (currentDate.getTime() === today.getTime() && false)) {
-                // Si no es hoy, rompe racha. Si es hoy, todavía hay tiempo.
+                if (h.estado === 'Activo') {
+                  statsByHabit[h.idhabito].completed++;
+                  statsByHabit[h.idhabito].currentStreak++;
+                  statsByHabit[h.idhabito].maxStreak = Math.max(statsByHabit[h.idhabito].maxStreak, statsByHabit[h.idhabito].currentStreak);
+                }
+              } else {
+                allCompletedForDay = false;
                 if (currentDate < today) {
-                  statsByHabit[h.idhabito].currentStreak = 0;
-                  allCompletedForDay = false;
+                  if (h.estado === 'Activo') {
+                    statsByHabit[h.idhabito].currentStreak = 0;
+                  }
                 }
               }
 
@@ -148,9 +156,10 @@ export class ReportsService {
           }
 
           if (anyScheduled) {
-             if (allCompletedForDay) globalCurrentStreak++;
-             else if (currentDate < today) {
+             if (allCompletedForDay) {
+               globalCurrentStreak++;
                rachaMaxima = Math.max(rachaMaxima, globalCurrentStreak);
+             } else if (currentDate < today) {
                globalCurrentStreak = 0;
              }
           }

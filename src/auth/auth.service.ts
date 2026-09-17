@@ -8,14 +8,13 @@ export class AuthService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async register(dto: RegisterDto) {
-    const { data, error } = await this.supabaseService.getClient().auth.signUp({
+    const { data, error } = await this.supabaseService.getClient().auth.admin.createUser({
       email: dto.email,
       password: dto.password,
-      options: {
-        data: {
-          nombre: dto.nombre,
-          apellido: dto.apellido,
-        },
+      email_confirm: true,
+      user_metadata: {
+        nombre: dto.nombre,
+        apellido: dto.apellido,
       },
     });
 

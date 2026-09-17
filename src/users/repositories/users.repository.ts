@@ -18,14 +18,15 @@ export class UsersRepository {
   async getUserStats(userId: string) {
     const client = this.supabaseService.getClient().schema('seguimiento');
     
-    // Get all active habits
-    const { data: activeHabits, error: err1 } = await client
+    // Get all habits to compute historical streaks correctly
+    const { data: allHabits, error: err1 } = await client
       .from('habitos')
-      .select('idhabito, fechainicio, dias_semana')
-      .eq('idusuario', userId)
-      .eq('estado', 'Activo');
+      .select('idhabito, fechainicio, dias_semana, estado')
+      .eq('idusuario', userId);
 
     if (err1) throw new InternalServerErrorException('Error fetch habits');
+    
+    const activeHabits = allHabits ? allHabits.filter(h => h.estado === 'Activo') : [];
 
     // Get all completed records
     const { data: records, error: err2 } = await client
@@ -37,8 +38,7 @@ export class UsersRepository {
     if (err2) throw new InternalServerErrorException('Error fetch records');
 
     const activeHabitsCount = activeHabits ? activeHabits.length : 0;
-    const uniqueDays = new Set(records?.map(r => r.fecha) || []);
-    const diasTotales = uniqueDays.size;
+    const totalCumplido = records?.length || 0;
 
     let totalEsperado = 0;
     const hoy = new Date();
@@ -57,7 +57,6 @@ export class UsersRepository {
         }
       }
     }
-    const totalCumplido = records?.length || 0;
     const tasaExito = totalEsperado > 0 ? Math.min(100, Math.round((totalCumplido / totalEsperado) * 100)) : 100;
 
     let rachaActual = 0;
@@ -76,7 +75,7 @@ export class UsersRepository {
       let jsDay = checkDate.getDay();
       let habDay = jsDay === 0 ? 7 : jsDay;
       
-      const scheduledForDay = activeHabits?.filter(h => {
+      const scheduledForDay = allHabits?.filter(h => {
         const startDate = new Date(h.fechainicio);
         startDate.setHours(0,0,0,0);
         return checkDate >= startDate && h.dias_semana && h.dias_semana.includes(habDay);
@@ -102,8 +101,8 @@ export class UsersRepository {
       checkDate.setDate(checkDate.getDate() - 1);
       firstCheck = false;
 
-      if (activeHabits && activeHabits.length > 0) {
-        const oldestHabitDate = new Date(Math.min(...activeHabits.map(h => new Date(h.fechainicio).getTime())));
+      if (allHabits && allHabits.length > 0) {
+        const oldestHabitDate = new Date(Math.min(...allHabits.map(h => new Date(h.fechainicio).getTime())));
         if (checkDate < oldestHabitDate) break;
       } else {
         break;
@@ -113,8 +112,8 @@ export class UsersRepository {
     return {
       activeHabitsCount,
       tasaExito,
-      diasTotales,
-      rachaActual
+      diasTotales: totalCumplido,
+      rachaActual,
     };
   }
 

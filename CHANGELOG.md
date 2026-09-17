@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.3.0](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/compare/v1.2.0...v1.3.0) (2026-09-17)
+
+
+### Features
+
+* correct streak logic, update records calculation, fix auth constraints ([3f0b27a](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/3f0b27a8b3faffc6896b82c37b2d07d22d1bbadc))
+
+
+### Bug Fixes
+
+* add cache cleanup to start:dev script to prevent module not found errors locally ([3f9a52d](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/3f9a52d33e8fd4699ef6e077eef5ef8fa9fc2fe1))
+* add postinstall script to build for azure ([55f4c63](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/55f4c635efa8b03706e98947a55294d6f9c8dcb9))
+* delete dist before build, add rimraf, update gitignore ([943e1ac](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/943e1ac42f28c38dc35120a19a5fa8d4164404a0))
+* explicitly set tsConfigPath to tsconfig.build.json in nest-cli ([7ed22f6](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/7ed22f62b0b3042e6c49cdd087e1dfce5e892628))
+* move rimraf to dependencies to fix azure postinstall ([fadce4e](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/fadce4ee3cd6254b6b085be19b58403fe689aa19))
+* **records:** permitir cantidades negativas para restar progreso en habitos ([20955a2](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/20955a2f497221546ad12072e06db3b9674759be))
+* remove dist from gitignore so azure kudu copies the compiled output ([8b8d982](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/8b8d98278ae8d3621820c880cd9e9121d3bc9f2a))
+* remove redundant postinstall and clean tsbuildinfo to prevent double-build cache bugs in azure ([ffe7a8c](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/ffe7a8c6b5564df8445c86f1e0bebafa99190dc0))
+* remove test_upsert.ts to prevent src/ nesting in dist ([4e7b4df](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/4e7b4dfe8c848c4c0e0b2e2ace42c9d64be3255f))
+* set rootDir to src to prevent nested dist output ([bb8ec82](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/bb8ec82c769f946bcd4eaa59d18ad6097d8a1471))
+
 ## 1.0.0 (2026-06-29)
 
 

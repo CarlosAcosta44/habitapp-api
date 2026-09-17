@@ -50,16 +50,19 @@ export class RecordsController {
     @Param('habitoId', ParseUUIDPipe) habitoId: string,
     @Req() req: any,
   ) {
-    return this.recordsService.getRacha(habitoId, req.user.userId as string);
+    const tzOffset = parseInt(req.headers['x-timezone-offset'] as string) || 0;
+    return this.recordsService.getRacha(habitoId, req.user.userId as string, tzOffset);
   }
 
   @Post('completar')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marcar un hábito como completado hoy' })
   marcarCompletado(@Body() dto: CreateRecordDto, @Req() req: any) {
+    const tzOffset = parseInt(req.headers['x-timezone-offset'] as string) || 0;
     return this.recordsService.marcarCompletado(
       dto,
       req.user.userId as string,
+      tzOffset,
     );
   }
 
@@ -70,9 +73,11 @@ export class RecordsController {
     @Param('habitoId', ParseUUIDPipe) habitoId: string,
     @Req() req: any,
   ) {
+    const tzOffset = parseInt(req.headers['x-timezone-offset'] as string) || 0;
     return this.recordsService.desmarcarCompletado(
       habitoId,
       req.user.userId as string,
+      tzOffset,
     );
   }
 
@@ -80,9 +85,11 @@ export class RecordsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Avanzar progreso de un hábito hoy' })
   avanzarProgreso(@Body() dto: AvanzarProgresoDto, @Req() req: any) {
+    const tzOffset = parseInt(req.headers['x-timezone-offset'] as string) || 0;
     return this.recordsService.avanzarProgreso(
       dto,
       req.user.userId as string,
+      tzOffset,
     );
   }
 }
