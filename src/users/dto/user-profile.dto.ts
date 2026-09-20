@@ -66,15 +66,6 @@ export class UpdateUserProfileDto {
   @IsString()
   @IsOptional()
   fechanacimiento?: string;
-
-  @ApiPropertyOptional({
-    example: 'America/Bogota',
-    description: 'Zona horaria del dispositivo',
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  zona_horaria?: string;
 }
 
 export class UserProfileDto {

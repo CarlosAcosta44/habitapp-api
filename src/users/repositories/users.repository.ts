@@ -156,7 +156,6 @@ export class UsersRepository {
       idrol: data.idrol,
       nombrerol: data.roles?.nombrerol || 'Usuario',
       puntosFaltantesTop1,
-      zona_horaria: data.zona_horaria,
     };
   }
 
@@ -186,7 +185,6 @@ export class UsersRepository {
       puntostotales: u.puntostotales,
       idrol: u.idrol,
       nombrerol: u.roles?.nombrerol || 'Usuario',
-      zona_horaria: u.zona_horaria,
     }));
   }
 
@@ -201,7 +199,6 @@ export class UsersRepository {
         | 'telefono'
         | 'genero'
         | 'fechanacimiento'
-        | 'zona_horaria'
       >
     >,
   ): Promise<UserProfileRow> {
