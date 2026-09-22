@@ -29,6 +29,12 @@ interface RawHabito {
 export class HabitsRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  private getLocalHoy(tzOffset: number): string {
+    const utcNow = new Date();
+    const localTime = new Date(utcNow.getTime() + tzOffset * 60000);
+    return localTime.toISOString().split('T')[0];
+  }
+
   private get db() {
     return this.supabaseService.getClient().schema('seguimiento');
   }
@@ -99,8 +105,9 @@ export class HabitsRepository {
     return (data ?? []).map((row: RawHabito) => this.mapToDomain(row));
   }
 
-  async findByUserIdWithRecordToday(userId: string) {
-    const hoy = new Date().toISOString().split('T')[0];
+  async findByUserIdWithRecordToday(userId: string, tzOffset: number = 0) {
+    // Calculamos el 'hoy' respetando la zona horaria del usuario
+    const hoy = this.getLocalHoy(tzOffset);
 
     const { data, error } = await this.db
       .from('habitos')
@@ -234,7 +241,7 @@ export class HabitsRepository {
   async getHabitStats(idHabito: string) {
     // Buscar todos los registros de este hábito
     const { data: records, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select('*')
       .eq('idhabito', idHabito)
       .order('fecha', { ascending: false });
@@ -292,7 +299,7 @@ export class HabitsRepository {
 
   async delete(idHabito: string): Promise<void> {
     // Borrar registros y recordatorios primero
-    await this.db.from('registro_habitos').delete().eq('idhabito', idHabito);
+    await this.db.schema('seguimiento').from('registro_habitos').delete().eq('idhabito', idHabito);
 
     await this.db.from('recordatorios').delete().eq('idhabito', idHabito);
 

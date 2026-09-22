@@ -12,8 +12,8 @@ import { UpdateHabitDto } from '../dto/update-habit.dto';
 export class HabitsService {
   constructor(private readonly habitsRepo: HabitsRepository) {}
 
-  async getDashboard(userId: string) {
-    return this.habitsRepo.findByUserIdWithRecordToday(userId);
+  async getDashboard(userId: string, tzOffset: number = 0) {
+    return this.habitsRepo.findByUserIdWithRecordToday(userId, tzOffset);
   }
 
   async findAll(userId: string, estado?: string) {

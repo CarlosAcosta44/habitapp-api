@@ -13,7 +13,7 @@ export declare class UsersRepository {
     }>;
     findProfileById(userId: string, email?: string): Promise<UserProfileRow>;
     findAllProfiles(): Promise<UserProfileRow[]>;
-    updateProfile(userId: string, payload: Partial<Pick<UserProfileRow, 'nombre' | 'apellido' | 'fotoperfil' | 'telefono' | 'genero' | 'fechanacimiento' | 'zona_horaria'>>): Promise<UserProfileRow>;
+    updateProfile(userId: string, payload: Partial<Pick<UserProfileRow, 'nombre' | 'apellido' | 'fotoperfil' | 'telefono' | 'genero' | 'fechanacimiento'>>): Promise<UserProfileRow>;
     updateRole(userId: string, roleName: RoleName): Promise<UserProfileRow>;
     updateFcmToken(userId: string, token: string): Promise<void>;
     uploadAvatar(userId: string, file: Express.Multer.File, token?: string): Promise<{

@@ -14,6 +14,27 @@ export declare class AuthService {
         refresh_token: string;
         user: import("@supabase/auth-js").User;
     }>;
+    loginWithGoogle(idToken: string): Promise<{
+        message: string;
+        access_token: string;
+        refresh_token: string;
+        user: import("@supabase/auth-js").User;
+    }>;
+    loginWithFacebook(accessToken: string): Promise<{
+        message: string;
+        access_token: string;
+        refresh_token: string;
+        user: import("@supabase/auth-js").User;
+    }>;
+    private getUserClient;
+    linkWithGoogle(accessToken: string, idToken: string): Promise<{
+        message: string;
+        user: any;
+    }>;
+    linkWithFacebook(accessToken: string, token: string): Promise<{
+        message: string;
+        user: any;
+    }>;
     refreshToken(refreshToken: string): Promise<{
         message: string;
         access_token: string;

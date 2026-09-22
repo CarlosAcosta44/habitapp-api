@@ -15,7 +15,6 @@ export declare class UpdateUserProfileDto {
     telefono?: string;
     genero?: string;
     fechanacimiento?: string;
-    zona_horaria?: string;
 }
 export declare class UserProfileDto {
     idusuario: string;

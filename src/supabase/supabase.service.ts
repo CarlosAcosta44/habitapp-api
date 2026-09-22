@@ -25,6 +25,9 @@ export class SupabaseService implements OnModuleInit {
         autoRefreshToken: false,
         persistSession: false,
       },
+      global: {
+        fetch: require('node-fetch'),
+      },
     });
   }
 

@@ -30,7 +30,7 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
             throw new common_1.InternalServerErrorException('Error fetch habits');
         const activeHabits = allHabits ? allHabits.filter(h => h.estado === 'Activo') : [];
         const { data: records, error: err2 } = await client
-            .from('registro_habitos')
+            .schema('seguimiento').from('registro_habitos')
             .select('idhabito, fecha')
             .eq('idusuario', userId)
             .eq('completado', true);
@@ -145,7 +145,6 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
             idrol: data.idrol,
             nombrerol: data.roles?.nombrerol || 'Usuario',
             puntosFaltantesTop1,
-            zona_horaria: data.zona_horaria,
         };
     }
     async findAllProfiles() {
@@ -170,7 +169,6 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
             puntostotales: u.puntostotales,
             idrol: u.idrol,
             nombrerol: u.roles?.nombrerol || 'Usuario',
-            zona_horaria: u.zona_horaria,
         }));
     }
     async updateProfile(userId, payload) {
@@ -227,6 +225,7 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
         const client = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
             global: {
                 headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+                fetch: require('node-fetch'),
             },
             auth: {
                 persistSession: false,

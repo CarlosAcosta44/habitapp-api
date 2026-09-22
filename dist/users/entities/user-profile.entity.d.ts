@@ -11,5 +11,4 @@ export interface UserProfileRow {
     idrol: string;
     nombrerol: string;
     puntosFaltantesTop1?: number;
-    zona_horaria?: string | null;
 }

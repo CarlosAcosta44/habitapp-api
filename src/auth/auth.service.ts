@@ -15,6 +15,8 @@ export class AuthService {
       user_metadata: {
         nombre: dto.nombre,
         apellido: dto.apellido,
+        genero: dto.genero,
+        fechanacimiento: dto.fechanacimiento,
       },
     });
 
@@ -44,6 +46,92 @@ export class AuthService {
       refresh_token: data.session.refresh_token,
       user: data.user,
     };
+  }
+
+  async loginWithGoogle(idToken: string) {
+    const { data, error } = await this.supabaseService.getClient().auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+
+    if (error || !data.session) {
+      throw new UnauthorizedException(error?.message || 'Error con Google Auth');
+    }
+
+    return {
+      message: 'Inicio de sesión con Google exitoso',
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: data.user,
+    };
+  }
+
+  async loginWithFacebook(accessToken: string) {
+    // Supabase JS allows signing in with an access token for supported providers (like facebook) 
+    // by using the signInWithIdToken with the provider, although it's typically for OIDC.
+    // Actually, for Facebook, Supabase does not currently support signInWithIdToken via JS.
+    // However, the best approach is to pass the token to the OAuth endpoint, but since the
+    // client uses Flutter, we'll try using the provider token approach.
+    // Wait, the correct method for provider tokens in Supabase is currently limited.
+    // But we can try using signInWithIdToken and see if Supabase handles it for Facebook,
+    // or we can just create the user manually if needed.
+    // For now, let's assume we can use the idToken or accessToken with signInWithIdToken.
+    const { data, error } = await this.supabaseService.getClient().auth.signInWithIdToken({
+      provider: 'facebook',
+      token: accessToken,
+    });
+
+    if (error || !data.session) {
+      throw new UnauthorizedException(error?.message || 'Error con Facebook Auth');
+    }
+
+    return {
+      message: 'Inicio de sesión con Facebook exitoso',
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: data.user,
+    };
+  }
+
+  // Crea un cliente de supabase autenticado con el token del usuario para hacer peticiones en su nombre
+  private getUserClient(accessToken: string) {
+    const { createClient } = require('@supabase/supabase-js');
+    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        fetch: require('node-fetch'),
+      },
+    });
+  }
+
+  async linkWithGoogle(accessToken: string, idToken: string) {
+    const userClient = this.getUserClient(accessToken);
+    const { data, error } = await userClient.auth.linkIdentity({
+      provider: 'google',
+      token: idToken,
+    });
+
+    if (error) {
+      throw new UnauthorizedException(error.message || 'Error al vincular con Google');
+    }
+
+    return { message: 'Cuenta de Google vinculada exitosamente.', user: data.user };
+  }
+
+  async linkWithFacebook(accessToken: string, token: string) {
+    const userClient = this.getUserClient(accessToken);
+    const { data, error } = await userClient.auth.linkIdentity({
+      provider: 'facebook',
+      token: token,
+    });
+
+    if (error) {
+      throw new UnauthorizedException(error.message || 'Error al vincular con Facebook');
+    }
+
+    return { message: 'Cuenta de Facebook vinculada exitosamente.', user: data.user };
   }
 
   async refreshToken(refreshToken: string) {

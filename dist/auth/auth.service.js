@@ -25,6 +25,8 @@ let AuthService = class AuthService {
             user_metadata: {
                 nombre: dto.nombre,
                 apellido: dto.apellido,
+                genero: dto.genero,
+                fechanacimiento: dto.fechanacimiento,
             },
         });
         if (error) {
@@ -49,6 +51,69 @@ let AuthService = class AuthService {
             refresh_token: data.session.refresh_token,
             user: data.user,
         };
+    }
+    async loginWithGoogle(idToken) {
+        const { data, error } = await this.supabaseService.getClient().auth.signInWithIdToken({
+            provider: 'google',
+            token: idToken,
+        });
+        if (error || !data.session) {
+            throw new common_1.UnauthorizedException(error?.message || 'Error con Google Auth');
+        }
+        return {
+            message: 'Inicio de sesión con Google exitoso',
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            user: data.user,
+        };
+    }
+    async loginWithFacebook(accessToken) {
+        const { data, error } = await this.supabaseService.getClient().auth.signInWithIdToken({
+            provider: 'facebook',
+            token: accessToken,
+        });
+        if (error || !data.session) {
+            throw new common_1.UnauthorizedException(error?.message || 'Error con Facebook Auth');
+        }
+        return {
+            message: 'Inicio de sesión con Facebook exitoso',
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            user: data.user,
+        };
+    }
+    getUserClient(accessToken) {
+        const { createClient } = require('@supabase/supabase-js');
+        return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+            global: {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                fetch: require('node-fetch'),
+            },
+        });
+    }
+    async linkWithGoogle(accessToken, idToken) {
+        const userClient = this.getUserClient(accessToken);
+        const { data, error } = await userClient.auth.linkIdentity({
+            provider: 'google',
+            token: idToken,
+        });
+        if (error) {
+            throw new common_1.UnauthorizedException(error.message || 'Error al vincular con Google');
+        }
+        return { message: 'Cuenta de Google vinculada exitosamente.', user: data.user };
+    }
+    async linkWithFacebook(accessToken, token) {
+        const userClient = this.getUserClient(accessToken);
+        const { data, error } = await userClient.auth.linkIdentity({
+            provider: 'facebook',
+            token: token,
+        });
+        if (error) {
+            throw new common_1.UnauthorizedException(error.message || 'Error al vincular con Facebook');
+        }
+        return { message: 'Cuenta de Facebook vinculada exitosamente.', user: data.user };
     }
     async refreshToken(refreshToken) {
         if (!refreshToken) {

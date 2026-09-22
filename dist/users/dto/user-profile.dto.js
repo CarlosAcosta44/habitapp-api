@@ -31,7 +31,6 @@ class UpdateUserProfileDto {
     telefono;
     genero;
     fechanacimiento;
-    zona_horaria;
 }
 exports.UpdateUserProfileDto = UpdateUserProfileDto;
 __decorate([
@@ -93,16 +92,6 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "fechanacimiento", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        example: 'America/Bogota',
-        description: 'Zona horaria del dispositivo',
-    }),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.MaxLength)(100),
-    __metadata("design:type", String)
-], UpdateUserProfileDto.prototype, "zona_horaria", void 0);
 class UserProfileDto {
     idusuario;
     nombre;

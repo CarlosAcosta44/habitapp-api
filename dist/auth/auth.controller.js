@@ -30,6 +30,28 @@ let AuthController = class AuthController {
     async login(dto) {
         return this.authService.login(dto);
     }
+    async loginWithGoogle(token) {
+        if (!token)
+            throw new common_1.BadRequestException('El token es requerido');
+        return this.authService.loginWithGoogle(token);
+    }
+    async linkWithGoogle(req, token) {
+        if (!token)
+            throw new common_1.BadRequestException('El token es requerido');
+        const accessToken = req.headers.authorization?.split(' ')[1];
+        return this.authService.linkWithGoogle(accessToken, token);
+    }
+    async loginWithFacebook(token) {
+        if (!token)
+            throw new common_1.BadRequestException('El token es requerido');
+        return this.authService.loginWithFacebook(token);
+    }
+    async linkWithFacebook(req, token) {
+        if (!token)
+            throw new common_1.BadRequestException('El token es requerido');
+        const accessToken = req.headers.authorization?.split(' ')[1];
+        return this.authService.linkWithFacebook(accessToken, token);
+    }
     async refresh(refreshToken) {
         return this.authService.refreshToken(refreshToken);
     }
@@ -69,6 +91,48 @@ __decorate([
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('google/token'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Iniciar sesión con token de Google' }),
+    __param(0, (0, common_1.Body)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "loginWithGoogle", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('google/link'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Vincular cuenta de Google' }),
+    (0, swagger_1.ApiBearerAuth)(),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "linkWithGoogle", null);
+__decorate([
+    (0, common_1.Post)('facebook/token'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Iniciar sesión con token de Facebook' }),
+    __param(0, (0, common_1.Body)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "loginWithFacebook", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('facebook/link'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Vincular cuenta de Facebook' }),
+    (0, swagger_1.ApiBearerAuth)(),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "linkWithFacebook", null);
 __decorate([
     (0, common_1.Post)('refresh'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

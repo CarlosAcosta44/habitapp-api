@@ -30,7 +30,7 @@ export class UsersRepository {
 
     // Get all completed records
     const { data: records, error: err2 } = await client
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select('idhabito, fecha')
       .eq('idusuario', userId)
       .eq('completado', true);
@@ -282,6 +282,7 @@ export class UsersRepository {
       {
         global: {
           headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+          fetch: require('node-fetch'),
         },
         auth: {
           persistSession: false,
