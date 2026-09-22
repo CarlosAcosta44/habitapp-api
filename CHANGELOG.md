@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.4.0](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/compare/v1.3.0...v1.4.0) (2026-09-22)
+
+
+### Features
+
+* **community:** add specialties mapping and fix report period metrics ([67b8ab9](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/commit/67b8ab973e71cea7574858946c934d0d6430f421))
+
 ## [1.3.0](https://dev.azure.com/HabitAppOrg/HabitApp/_git/HabitAppBackend/compare/v1.2.0...v1.3.0) (2026-09-17)
 
 
