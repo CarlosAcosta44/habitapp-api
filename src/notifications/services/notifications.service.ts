@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotificationsRepository } from '../repositories/notifications.repository';
 import { EmailService } from './email.service';
-import { SupabaseService } from '../../supabase/services/supabase.service';
 import {
   CreateNotificationDto,
   NotificationDto,
@@ -15,7 +14,6 @@ export class NotificationsService {
   constructor(
     private readonly notificationsRepository: NotificationsRepository,
     private readonly emailService: EmailService,
-    private readonly supabaseService: SupabaseService,
   ) {}
 
   async getNotificationsForUser(userId: string): Promise<NotificationDto[]> {
@@ -57,18 +55,14 @@ export class NotificationsService {
     type: string,
   ): Promise<void> {
     try {
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .auth.admin.getUserById(userId);
+      const email = await this.notificationsRepository.getUserEmail(userId);
 
-      if (error || !data?.user || !data.user.email) {
+      if (!email) {
         this.logger.warn(
           `No se pudo obtener el correo para el usuario ${userId} para enviar la notificación.`,
         );
         return;
       }
-
-      const email = data.user.email;
       const subject = `HabitApp: Nueva notificación de ${type}`;
       const html = `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">

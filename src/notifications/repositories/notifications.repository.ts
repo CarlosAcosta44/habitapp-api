@@ -106,4 +106,20 @@ export class NotificationsRepository {
       );
     }
   }
+
+  /**
+   * Obtiene el email de un usuario directamente desde Supabase Auth Admin.
+   * Encapsulado aquí para que el Service no acceda a Supabase directamente.
+   */
+  async getUserEmail(userId: string): Promise<string | null> {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .auth.admin.getUserById(userId);
+
+    if (error || !data?.user?.email) {
+      return null;
+    }
+    return data.user.email;
+  }
 }
+
