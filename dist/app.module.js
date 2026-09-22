@@ -20,12 +20,6 @@ const coach_module_1 = require("./coach/coach.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const reports_module_1 = require("./reports/reports.module");
 const admin_module_1 = require("./admin/admin.module");
-const community_module_1 = require("./community/community.module");
-const habits_module_1 = require("./habits/habits.module");
-const records_module_1 = require("./records/records.module");
-const friends_module_1 = require("./friends/friends.module");
-const quotes_module_1 = require("./quotes/quotes.module");
-const comunidad_module_1 = require("./comunidad/comunidad.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -49,12 +43,6 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             reports_module_1.ReportsModule,
             admin_module_1.AdminModule,
-            community_module_1.CommunityModule,
-            habits_module_1.HabitsModule,
-            records_module_1.RecordsModule,
-            friends_module_1.FriendsModule,
-            quotes_module_1.QuotesModule,
-            comunidad_module_1.ComunidadModule,
         ],
         controllers: [],
         providers: [
