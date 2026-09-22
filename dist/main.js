@@ -47,8 +47,12 @@ const swagger_1 = require("@nestjs/swagger");
 const app_module_1 = require("./app.module");
 const helmet_1 = __importDefault(require("helmet"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const dns = __importStar(require("dns"));
+dns.setDefaultResultOrder('ipv4first');
 async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const app = await core_1.NestFactory.create(app_module_1.AppModule, {
+        logger: ['error', 'warn'],
+    });
     app.use((0, helmet_1.default)());
     app.use((0, cookie_parser_1.default)());
     app.setGlobalPrefix('api/v1');

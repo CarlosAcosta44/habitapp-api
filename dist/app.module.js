@@ -24,6 +24,8 @@ const community_module_1 = require("./community/community.module");
 const habits_module_1 = require("./habits/habits.module");
 const records_module_1 = require("./records/records.module");
 const friends_module_1 = require("./friends/friends.module");
+const quotes_module_1 = require("./quotes/quotes.module");
+const comunidad_module_1 = require("./comunidad/comunidad.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -51,6 +53,8 @@ exports.AppModule = AppModule = __decorate([
             habits_module_1.HabitsModule,
             records_module_1.RecordsModule,
             friends_module_1.FriendsModule,
+            quotes_module_1.QuotesModule,
+            comunidad_module_1.ComunidadModule,
         ],
         controllers: [],
         providers: [

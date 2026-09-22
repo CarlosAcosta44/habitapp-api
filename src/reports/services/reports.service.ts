@@ -57,7 +57,7 @@ export class ReportsService {
       oneYearAgo.setFullYear(today.getFullYear() - 1);
       const { data: records, error: recordsError } = await client
         .schema('seguimiento')
-        .from('registro_habitos')
+        .schema('seguimiento').from('registro_habitos')
         .select('idhabito, fecha, completado')
         .eq('idusuario', userId)
         .eq('completado', true)
@@ -115,6 +115,8 @@ export class ReportsService {
             const hStart = new Date(h.fechainicio);
             hStart.setHours(0,0,0,0);
             
+            if (h.estado !== 'Activo') continue;
+
             if (currentDate >= hStart && h.dias_semana && h.dias_semana.includes(habDay)) {
               anyScheduled = true;
               

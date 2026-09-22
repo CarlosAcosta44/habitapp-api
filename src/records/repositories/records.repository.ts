@@ -41,7 +41,7 @@ export class RecordsRepository {
 
   async findByHabitoId(habitoId: string) {
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select('*')
       .eq('idhabito', habitoId)
       .order('fecha', { ascending: false })
@@ -57,7 +57,7 @@ export class RecordsRepository {
 
   async findByUsuarioId(usuarioId: string) {
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select(
         `
         idregistro, fecha, completado, progreso_actual, puntos_ganados,
@@ -89,7 +89,7 @@ export class RecordsRepository {
     const hoy = this.getLocalHoy(tzOffset);
 
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select('*')
       .eq('idhabito', habitoId)
       .eq('idusuario', usuarioId)
@@ -117,7 +117,7 @@ export class RecordsRepository {
   ) {
     const hoy = this.getLocalHoy(tzOffset);
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .upsert(
         {
           idhabito: payload.idhabito,
@@ -144,7 +144,7 @@ export class RecordsRepository {
     const hoy = this.getLocalHoy(tzOffset);
 
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .update({ completado: false, progreso_actual: 0 })
       .eq('idhabito', habitoId)
       .eq('idusuario', usuarioId)
@@ -174,7 +174,7 @@ export class RecordsRepository {
     const hoy = this.getLocalHoy(tzOffset);
     // Buscar progreso actual del día
     const { data: hoyRegs } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select('progreso_actual')
       .eq('idhabito', payload.idhabito)
       .eq('idusuario', payload.idusuario)
@@ -189,7 +189,7 @@ export class RecordsRepository {
     const completado = newProgress >= payload.metaDiaria;
 
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .upsert(
         {
           idhabito: payload.idhabito,
@@ -214,7 +214,7 @@ export class RecordsRepository {
 
   async calcularRacha(habitoId: string, usuarioId: string, tzOffset: number = 0) {
     const { data, error } = await this.db
-      .from('registro_habitos')
+      .schema('seguimiento').from('registro_habitos')
       .select('fecha, completado')
       .eq('idhabito', habitoId)
       .eq('idusuario', usuarioId)

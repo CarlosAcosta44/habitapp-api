@@ -16,6 +16,7 @@ import { HabitsModule } from './habits/habits.module';
 import { RecordsModule } from './records/records.module';
 import { FriendsModule } from './friends/friends.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { ComunidadModule } from './comunidad/comunidad.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { QuotesModule } from './quotes/quotes.module';
     RecordsModule,
     FriendsModule,
     QuotesModule,
+    ComunidadModule,
   ],
   controllers: [],
   providers: [

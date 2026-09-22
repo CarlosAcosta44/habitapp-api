@@ -35,7 +35,8 @@ export class HabitsController {
   @Get('dashboard')
   @ApiOperation({ summary: 'Dashboard: hábitos activos con progreso de hoy' })
   getDashboard(@Req() req: any) {
-    return this.habitsService.getDashboard(req.user.userId as string);
+    const tzOffset = parseInt(req.headers['x-timezone-offset'] as string) || 0;
+    return this.habitsService.getDashboard(req.user.userId as string, tzOffset);
   }
 
   @Get('categorias')

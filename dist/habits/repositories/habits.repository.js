@@ -17,6 +17,11 @@ let HabitsRepository = class HabitsRepository {
     constructor(supabaseService) {
         this.supabaseService = supabaseService;
     }
+    getLocalHoy(tzOffset) {
+        const utcNow = new Date();
+        const localTime = new Date(utcNow.getTime() + tzOffset * 60000);
+        return localTime.toISOString().split('T')[0];
+    }
     get db() {
         return this.supabaseService.getClient().schema('seguimiento');
     }
@@ -76,8 +81,8 @@ let HabitsRepository = class HabitsRepository {
         }
         return (data ?? []).map((row) => this.mapToDomain(row));
     }
-    async findByUserIdWithRecordToday(userId) {
-        const hoy = new Date().toISOString().split('T')[0];
+    async findByUserIdWithRecordToday(userId, tzOffset = 0) {
+        const hoy = this.getLocalHoy(tzOffset);
         const { data, error } = await this.db
             .from('habitos')
             .select(`
@@ -172,7 +177,7 @@ let HabitsRepository = class HabitsRepository {
     }
     async getHabitStats(idHabito) {
         const { data: records, error } = await this.db
-            .from('registro_habitos')
+            .schema('seguimiento').from('registro_habitos')
             .select('*')
             .eq('idhabito', idHabito)
             .order('fecha', { ascending: false });
@@ -218,7 +223,7 @@ let HabitsRepository = class HabitsRepository {
         };
     }
     async delete(idHabito) {
-        await this.db.from('registro_habitos').delete().eq('idhabito', idHabito);
+        await this.db.schema('seguimiento').from('registro_habitos').delete().eq('idhabito', idHabito);
         await this.db.from('recordatorios').delete().eq('idhabito', idHabito);
         const { error } = await this.db
             .from('habitos')

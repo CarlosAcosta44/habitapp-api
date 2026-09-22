@@ -25,7 +25,8 @@ let HabitsController = class HabitsController {
         this.habitsService = habitsService;
     }
     getDashboard(req) {
-        return this.habitsService.getDashboard(req.user.userId);
+        const tzOffset = parseInt(req.headers['x-timezone-offset']) || 0;
+        return this.habitsService.getDashboard(req.user.userId, tzOffset);
     }
     getCategorias() {
         return this.habitsService.getCategorias();

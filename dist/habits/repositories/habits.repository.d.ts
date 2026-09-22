@@ -22,6 +22,7 @@ interface RawHabito {
 export declare class HabitsRepository {
     private readonly supabaseService;
     constructor(supabaseService: SupabaseService);
+    private getLocalHoy;
     private get db();
     private readonly SELECT_WITH_CATEGORIA;
     mapToDomain(row: RawHabito): {
@@ -84,7 +85,7 @@ export declare class HabitsRepository {
             icono: string | null;
         } | null;
     }[]>;
-    findByUserIdWithRecordToday(userId: string): Promise<{
+    findByUserIdWithRecordToday(userId: string, tzOffset?: number): Promise<{
         registroHoy: {
             idRegistro: any;
             completado: any;

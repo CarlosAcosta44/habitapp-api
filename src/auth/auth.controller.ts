@@ -24,6 +24,44 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('google/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Iniciar sesión con token de Google' })
+  async loginWithGoogle(@Body('token') token: string) {
+    if (!token) throw new BadRequestException('El token es requerido');
+    return this.authService.loginWithGoogle(token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('google/link')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Vincular cuenta de Google' })
+  @ApiBearerAuth()
+  async linkWithGoogle(@Req() req: any, @Body('token') token: string) {
+    if (!token) throw new BadRequestException('El token es requerido');
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    return this.authService.linkWithGoogle(accessToken, token);
+  }
+
+  @Post('facebook/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Iniciar sesión con token de Facebook' })
+  async loginWithFacebook(@Body('token') token: string) {
+    if (!token) throw new BadRequestException('El token es requerido');
+    return this.authService.loginWithFacebook(token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('facebook/link')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Vincular cuenta de Facebook' })
+  @ApiBearerAuth()
+  async linkWithFacebook(@Req() req: any, @Body('token') token: string) {
+    if (!token) throw new BadRequestException('El token es requerido');
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    return this.authService.linkWithFacebook(accessToken, token);
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refrescar sesión con refresh_token (Vía Supabase Auth)' })

@@ -30,6 +30,9 @@ let SupabaseService = class SupabaseService {
                 autoRefreshToken: false,
                 persistSession: false,
             },
+            global: {
+                fetch: require('node-fetch'),
+            },
         });
     }
     getClient() {

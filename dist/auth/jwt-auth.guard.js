@@ -27,7 +27,11 @@ let JwtAuthGuard = class JwtAuthGuard {
         if (!supabaseUrl || !supabaseKey) {
             throw new Error('Las variables SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY son obligatorias');
         }
-        this.supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
+        this.supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey, {
+            global: {
+                fetch: require('node-fetch'),
+            },
+        });
     }
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();

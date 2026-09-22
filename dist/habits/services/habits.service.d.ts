@@ -4,7 +4,7 @@ import { UpdateHabitDto } from '../dto/update-habit.dto';
 export declare class HabitsService {
     private readonly habitsRepo;
     constructor(habitsRepo: HabitsRepository);
-    getDashboard(userId: string): Promise<{
+    getDashboard(userId: string, tzOffset?: number): Promise<{
         registroHoy: {
             idRegistro: any;
             completado: any;

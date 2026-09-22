@@ -17,8 +17,8 @@ let HabitsService = class HabitsService {
     constructor(habitsRepo) {
         this.habitsRepo = habitsRepo;
     }
-    async getDashboard(userId) {
-        return this.habitsRepo.findByUserIdWithRecordToday(userId);
+    async getDashboard(userId, tzOffset = 0) {
+        return this.habitsRepo.findByUserIdWithRecordToday(userId, tzOffset);
     }
     async findAll(userId, estado) {
         return this.habitsRepo.findByUserId(userId, estado);

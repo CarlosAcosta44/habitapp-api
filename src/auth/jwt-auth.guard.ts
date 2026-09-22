@@ -21,7 +21,11 @@ export class JwtAuthGuard implements CanActivate {
       throw new Error('Las variables SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY son obligatorias');
     }
     
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+    this.supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        fetch: require('node-fetch'),
+      },
+    });
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
