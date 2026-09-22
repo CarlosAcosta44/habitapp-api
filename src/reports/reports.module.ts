@@ -3,6 +3,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { ReportsController } from './controllers/reports.controller';
 import { ReportsService } from './services/reports.service';
 import { SupabaseModule } from '../supabase/supabase.module';
+import { ReportsRepository } from './repositories/reports.repository';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { SupabaseModule } from '../supabase/supabase.module';
     SupabaseModule, // Necesario para inyectar SupabaseService
   ],
   controllers: [ReportsController],
-  providers: [ReportsService],
+  providers: [ReportsService, ReportsRepository],
   exports: [ReportsService],
 })
 export class ReportsModule {}

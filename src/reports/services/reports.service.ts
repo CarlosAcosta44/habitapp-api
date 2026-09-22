@@ -1,21 +1,16 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from '../../supabase/services/supabase.service';
+import { ReportsRepository } from '../repositories/reports.repository';
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly reportsRepository: ReportsRepository) {}
 
   async getRanking() {
     try {
-      const { data, error } = await this.supabaseService
-        .getClient()
-        .schema('gestion')
-        .from('vista_ranking')
-        .select('*')
-        .limit(100);
+      const data = await this.reportsRepository.getRanking();
 
-      if (error) {
-        throw new Error(error.message);
+      if (!data) {
+        throw new Error('No data found');
       }
 
       return data;
@@ -28,41 +23,22 @@ export class ReportsService {
 
   async getUserSummary(userId: string, period: 'week' | 'month' | 'year' = 'week') {
     try {
-      const client = this.supabaseService.getClient();
       const today = new Date();
       today.setHours(0,0,0,0);
       const todayStr = today.toISOString().split('T')[0];
 
       // 1. Obtener datos del perfil
-      const { data: userProfile, error: profileError } = await client
-        .schema('gestion')
-        .from('usuarios')
-        .select('nombre, puntostotales')
-        .eq('idusuario', userId)
-        .single();
-      if (profileError) throw new Error(`Profile error: ${profileError.message}`);
+      const userProfile = await this.reportsRepository.getUserProfile(userId);
 
       // 2. Obtener TODOS los hábitos (Activos e Inactivos) para calcular historial real
-      const { data: allHabits, error: habitsError } = await client
-        .schema('seguimiento')
-        .from('habitos')
-        .select('idhabito, fechainicio, dias_semana, estado, nombre')
-        .eq('idusuario', userId);
-      if (habitsError) throw new Error(`Habits error: ${habitsError.message}`);
-
+      const allHabits = await this.reportsRepository.getAllHabits(userId);
       const activeHabits = allHabits.filter(h => h.estado === 'Activo');
 
       // 3. Obtener registros de hábitos completados (hasta 1 año para cálculos)
       const oneYearAgo = new Date(today);
       oneYearAgo.setFullYear(today.getFullYear() - 1);
-      const { data: records, error: recordsError } = await client
-        .schema('seguimiento')
-        .schema('seguimiento').from('registro_habitos')
-        .select('idhabito, fecha, completado')
-        .eq('idusuario', userId)
-        .eq('completado', true)
-        .gte('fecha', oneYearAgo.toISOString().split('T')[0]);
-      if (recordsError) throw new Error(`Records error: ${recordsError.message}`);
+      const startDate = oneYearAgo.toISOString().split('T')[0];
+      const records = await this.reportsRepository.getHabitRecordsFromDate(userId, startDate);
 
       // Variables para resultados
       let cumplimientoGlobal = 0;
@@ -222,15 +198,7 @@ export class ReportsService {
   }
   async getHabitsReport(userId: string) {
     try {
-      const client = this.supabaseService.getClient();
-      const { data: habitos, error } = await client
-        .schema('seguimiento')
-        .from('habitos')
-        .select('idhabito, nombre, descripcion, color')
-        .eq('idusuario', userId)
-        .eq('estado', 'Activo');
-
-      if (error) throw new Error(error.message);
+      const habitos = await this.reportsRepository.getActiveHabitsInfo(userId);
 
       return habitos.map((h: any) => ({
         idHabito: h.idhabito,

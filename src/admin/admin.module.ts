@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AdminController } from './controllers/admin.controller';
 import { AdminService } from './services/admin.service';
+import { AdminRepository } from './repositories/admin.repository';
+import { QuotesService } from './services/quotes.service';
+import { QuotesRepository } from './repositories/quotes.repository';
 import { UsersModule } from '../users/users.module';
+import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
-  imports: [UsersModule],
+  imports: [SupabaseModule, UsersModule],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, AdminRepository, QuotesService, QuotesRepository],
 })
 export class AdminModule {}

@@ -1,16 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from '../../supabase/services/supabase.service';
+import { QuotesRepository } from '../repositories/quotes.repository';
 
 @Injectable()
 export class QuotesService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly quotesRepository: QuotesRepository) {}
 
   async getDailyQuote() {
-    const supabase = this.supabaseService.getClient();
-    // Fetch all quotes from the 'quotes' table
-    const { data, error } = await supabase.schema('comunidad').from('quotes').select('*');
-    if (error || !data || data.length === 0) {
-      if (error) console.error("Error fetching qoutes:", error.message);
+    const data = await this.quotesRepository.getAllQuotes();
+    if (!data || data.length === 0) {
       return { phrase: 'Cada día es una nueva oportunidad.', author: 'HabitApp' };
     }
     

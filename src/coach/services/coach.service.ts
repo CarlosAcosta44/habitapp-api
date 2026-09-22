@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseService } from '../../supabase/services/supabase.service';
+import { CoachRepository } from '../repositories/coach.repository';
 import { CreateRoutineDto } from '../dto/create-routine.dto';
 import { UpdateRoutineDto } from '../dto/update-routine.dto';
 import { ReportsService } from '../../reports/services/reports.service';
@@ -11,51 +11,21 @@ import { ReportsService } from '../../reports/services/reports.service';
 @Injectable()
 export class CoachService {
   constructor(
-    private readonly supabaseService: SupabaseService,
+    private readonly coachRepository: CoachRepository,
     private readonly reportsService: ReportsService,
   ) {}
 
   private async getTrainerId(userId: string): Promise<string> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .schema('seguimiento')
-      .from('entrenadores')
-      .select('identrenador')
-      .eq('idusuario', userId)
-      .single();
-
-    if (error || !data) {
-      throw new NotFoundException(
-        'Perfil de entrenador no encontrado para este usuario',
-      );
-    }
-    return data.identrenador;
+    return this.coachRepository.getTrainerId(userId);
   }
 
   async getClients(userId: string) {
     const trainerId = await this.getTrainerId(userId);
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .schema('seguimiento')
-      .from('usuario_entrenador')
-      .select('fechainicio, idusuario')
-      .eq('identrenador', trainerId);
-
-    if (error) {
-      throw new InternalServerErrorException(
-        `Failed to fetch clients: ${error.message}`,
-      );
-    }
+    const data = await this.coachRepository.getClientsByTrainer(trainerId);
 
     const clientsWithProfiles = await Promise.all(
       data.map(async (item: any) => {
-        const { data: profile } = await this.supabaseService
-          .getClient()
-          .schema('gestion')
-          .from('usuarios')
-          .select('*, roles(nombrerol)')
-          .eq('idusuario', item.idusuario)
-          .single();
+        const profile = await this.coachRepository.getUserProfile(item.idusuario);
 
         return {
           assigned_at: item.fechainicio,
@@ -79,26 +49,12 @@ export class CoachService {
 
   async createRoutine(userId: string, dto: CreateRoutineDto) {
     const trainerId = await this.getTrainerId(userId);
-    const client = this.supabaseService.getClient();
 
-    const { data: routine, error: routineError } = await client
-      .schema('seguimiento')
-      .from('rutinas')
-      .insert({
-        identrenador: trainerId,
-        tipo: 'General',
-        descripcion: dto.description || '',
-        nivel: 'Principiante',
-        objetivo: dto.name,
-      })
-      .select()
-      .single();
-
-    if (routineError) {
-      throw new InternalServerErrorException(
-        `Failed to create routine: ${routineError.message}`,
-      );
-    }
+    const routine = await this.coachRepository.createRoutine(
+      trainerId, 
+      dto.description || '', 
+      dto.name
+    );
 
     if (dto.habits && dto.habits.length > 0) {
       console.warn(
@@ -111,18 +67,7 @@ export class CoachService {
 
   async getRoutines(userId: string) {
     const trainerId = await this.getTrainerId(userId);
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .schema('seguimiento')
-      .from('rutinas')
-      .select('*')
-      .eq('identrenador', trainerId);
-
-    if (error) {
-      throw new InternalServerErrorException(
-        `Failed to fetch routines: ${error.message}`,
-      );
-    }
+    const data = await this.coachRepository.getRoutinesByTrainer(trainerId);
 
     return data.map((r: any) => ({
       ...r,
@@ -135,18 +80,7 @@ export class CoachService {
 
   async getRoutineById(userId: string, routineId: string) {
     const trainerId = await this.getTrainerId(userId);
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .schema('seguimiento')
-      .from('rutinas')
-      .select('*')
-      .eq('idrutina', routineId)
-      .eq('identrenador', trainerId)
-      .single();
-
-    if (error) {
-      throw new NotFoundException(`Routine not found or not owned by trainer`);
-    }
+    const data = await this.coachRepository.getRoutineByIdAndTrainer(routineId, trainerId);
 
     return {
       ...data,
@@ -165,24 +99,12 @@ export class CoachService {
     const trainerId = await this.getTrainerId(userId);
     await this.getRoutineById(userId, routineId);
 
-    const client = this.supabaseService.getClient();
     const updateData: any = {};
     if (dto.name !== undefined) updateData.objetivo = dto.name;
     if (dto.description !== undefined) updateData.descripcion = dto.description;
 
     if (Object.keys(updateData).length > 0) {
-      const { error } = await client
-        .schema('seguimiento')
-        .from('rutinas')
-        .update(updateData)
-        .eq('idrutina', routineId)
-        .eq('identrenador', trainerId);
-
-      if (error) {
-        throw new InternalServerErrorException(
-          `Failed to update routine: ${error.message}`,
-        );
-      }
+      await this.coachRepository.updateRoutine(routineId, trainerId, updateData);
     }
 
     if (dto.habits) {
@@ -198,34 +120,11 @@ export class CoachService {
     const trainerId = await this.getTrainerId(userId);
     await this.getRoutineById(userId, routineId);
 
-    const client = this.supabaseService.getClient();
-
     // 1. Eliminar asignaciones de usuarios a esta rutina (cascada manual)
-    const { error: deleteAssignsError } = await client
-      .schema('seguimiento')
-      .from('usuario_rutina')
-      .delete()
-      .eq('idrutina', routineId);
-
-    if (deleteAssignsError) {
-      throw new InternalServerErrorException(
-        `Failed to delete routine assignments: ${deleteAssignsError.message}`,
-      );
-    }
+    await this.coachRepository.deleteRoutineAssignments(routineId);
 
     // 2. Eliminar la rutina
-    const { error } = await client
-      .schema('seguimiento')
-      .from('rutinas')
-      .delete()
-      .eq('idrutina', routineId)
-      .eq('identrenador', trainerId);
-
-    if (error) {
-      throw new InternalServerErrorException(
-        `Failed to delete routine: ${error.message}`,
-      );
-    }
+    await this.coachRepository.deleteRoutine(routineId, trainerId);
   }
 
   async assignRoutineToClient(
@@ -234,38 +133,10 @@ export class CoachService {
     routineId: string,
   ) {
     const trainerId = await this.getTrainerId(userId);
-    const client = this.supabaseService.getClient();
 
-    const { data: relationship, error: relError } = await client
-      .schema('seguimiento')
-      .from('usuario_entrenador')
-      .select('fechainicio')
-      .eq('identrenador', trainerId)
-      .eq('idusuario', clientId)
-      .single();
-
-    if (relError || !relationship) {
-      throw new NotFoundException(
-        `Client ${clientId} is not assigned to trainer ${trainerId}`,
-      );
-    }
-
+    await this.coachRepository.getClientTrainerRelationship(trainerId, clientId);
     await this.getRoutineById(userId, routineId);
-
-    const { error: assignError } = await client
-      .schema('seguimiento')
-      .from('usuario_rutina')
-      .insert({
-        idusuario: clientId,
-        idrutina: routineId,
-        estado: 'Activo',
-      });
-
-    if (assignError) {
-      throw new InternalServerErrorException(
-        `Failed to assign routine to client: ${assignError.message}`,
-      );
-    }
+    await this.coachRepository.assignRoutineToClient(clientId, routineId);
 
     return {
       message: 'Routine assigned successfully to client',
@@ -275,21 +146,7 @@ export class CoachService {
 
   async getClientProgress(userId: string, clientId: string) {
     const trainerId = await this.getTrainerId(userId);
-    const client = this.supabaseService.getClient();
-
-    const { data: relationship, error: relError } = await client
-      .schema('seguimiento')
-      .from('usuario_entrenador')
-      .select('fechainicio')
-      .eq('identrenador', trainerId)
-      .eq('idusuario', clientId)
-      .single();
-
-    if (relError || !relationship) {
-      throw new NotFoundException(
-        `Client ${clientId} is not assigned to trainer ${trainerId}`,
-      );
-    }
+    await this.coachRepository.getClientTrainerRelationship(trainerId, clientId);
 
     return this.reportsService.getUserSummary(clientId);
   }
