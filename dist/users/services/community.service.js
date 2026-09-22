@@ -11,26 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommunityService = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("../../supabase/supabase.service");
+const community_repository_1 = require("../repositories/community.repository");
 let CommunityService = class CommunityService {
-    supabaseService;
-    constructor(supabaseService) {
-        this.supabaseService = supabaseService;
-    }
-    getClient(accessToken) {
-        if (accessToken) {
-            const { createClient } = require('@supabase/supabase-js');
-            const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-            return createClient(process.env.SUPABASE_URL, anonKey, {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                    fetch: require('node-fetch'),
-                },
-            });
-        }
-        return this.supabaseService.getClient();
+    communityRepository;
+    constructor(communityRepository) {
+        this.communityRepository = communityRepository;
     }
     decodeJwtUserId(token) {
         if (!token)
@@ -44,25 +29,23 @@ let CommunityService = class CommunityService {
         }
     }
     async getForums(accessToken) {
-        const { data, error } = await this.getClient().schema('comunidad').from('foros').select('*').order('fechacreacion', { ascending: false });
-        if (error)
-            throw new common_1.BadRequestException(error.message);
+        const data = await this.communityRepository.getForums();
         const userIds = [...new Set(data.map((f) => f.idusuario).filter((id) => id))];
         if (userIds.length > 0) {
-            const { data: usersData } = await this.getClient().schema('gestion').from('usuarios').select('idusuario, nombre, apellido').in('idusuario', userIds);
+            const usersData = await this.communityRepository.getUsersByIds(userIds);
             const userMap = {};
-            usersData?.forEach((u) => userMap[u.idusuario] = u);
+            usersData.forEach((u) => userMap[u.idusuario] = u);
             const forumIds = data.map((f) => f.idforo);
-            const { data: commentsData } = await this.getClient().schema('comunidad').from('comentarios').select('idforo').in('idforo', forumIds);
+            const commentsData = await this.communityRepository.getCommentCountsByForumIds(forumIds);
             const commentCounts = {};
-            commentsData?.forEach((c) => {
+            commentsData.forEach((c) => {
                 commentCounts[c.idforo] = (commentCounts[c.idforo] || 0) + 1;
             });
-            const { data: reactionsData } = await this.getClient().schema('comunidad').from('usuario_foro').select('idforo, idusuario').in('idforo', forumIds);
+            const reactionsData = await this.communityRepository.getForumSubscriptions(forumIds);
             const likesCounts = {};
             const likedByMe = {};
-            let currentUserId = this.decodeJwtUserId(accessToken);
-            reactionsData?.forEach((r) => {
+            const currentUserId = this.decodeJwtUserId(accessToken);
+            reactionsData.forEach((r) => {
                 likesCounts[r.idforo] = (likesCounts[r.idforo] || 0) + 1;
                 if (currentUserId && r.idusuario === currentUserId) {
                     likedByMe[r.idforo] = true;
@@ -78,25 +61,18 @@ let CommunityService = class CommunityService {
         return data;
     }
     async getCommentsByForumId(forumId, accessToken) {
-        const { data, error } = await this.getClient()
-            .schema('comunidad')
-            .from('comentarios')
-            .select('*')
-            .eq('idforo', forumId)
-            .order('fechapublicacion', { ascending: true });
-        if (error)
-            throw new common_1.BadRequestException(error.message);
+        const data = await this.communityRepository.getCommentsByForumId(forumId);
         const userIds = [...new Set(data.map((c) => c.idusuario).filter((id) => id))];
         if (userIds.length > 0) {
-            const { data: usersData } = await this.getClient().schema('gestion').from('usuarios').select('idusuario, nombre, apellido').in('idusuario', userIds);
+            const usersData = await this.communityRepository.getUsersByIds(userIds);
             const userMap = {};
-            usersData?.forEach((u) => userMap[u.idusuario] = u);
+            usersData.forEach((u) => userMap[u.idusuario] = u);
             const commentIds = data.map((c) => c.idcomentario);
-            const { data: reactionsData } = await this.getClient().schema('comunidad').from('reacciones').select('idcomentario, idusuario, tipo').in('idcomentario', commentIds);
+            const reactionsData = await this.communityRepository.getCommentReactions(commentIds);
             const likesCounts = {};
             const likedByMe = {};
-            let currentUserId = this.decodeJwtUserId(accessToken);
-            reactionsData?.forEach((r) => {
+            const currentUserId = this.decodeJwtUserId(accessToken);
+            reactionsData.forEach((r) => {
                 if ((r.tipo === 'LIKE' || r.tipo === 'Me gusta') && r.idcomentario) {
                     likesCounts[r.idcomentario] = (likesCounts[r.idcomentario] || 0) + 1;
                     if (currentUserId && r.idusuario === currentUserId) {
@@ -113,254 +89,103 @@ let CommunityService = class CommunityService {
         return data;
     }
     async uploadImage(accessToken, file) {
-        const { data: userData, error: userError } = await this.supabaseService.getClient().auth.getUser(accessToken);
-        if (userError || !userData.user)
-            throw new common_1.UnauthorizedException('No autenticado');
-        const userId = userData.user.id;
+        const user = await this.communityRepository.validateUserTokenFromClient(accessToken);
         const fileExt = file.originalname.split('.').pop() || 'png';
-        const fileName = `${userId}_${Date.now()}.${fileExt}`;
-        const filePath = `${userId}/${fileName}`;
-        const { createClient } = require('@supabase/supabase-js');
-        const client = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
-            global: {
-                headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
-                fetch: require('node-fetch'),
-            },
-            auth: { persistSession: false, autoRefreshToken: false },
-        });
-        const { error: uploadError } = await client
-            .storage.from('avatars')
-            .upload(filePath, file.buffer, {
-            contentType: file.mimetype,
-            upsert: true,
-        });
-        if (uploadError) {
-            throw new common_1.InternalServerErrorException(`Error al subir imagen al bucket: ${uploadError.message}`);
-        }
-        const { data } = client.storage.from('avatars').getPublicUrl(filePath);
-        return { url: data.publicUrl };
+        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+        const url = await this.communityRepository.uploadImageToStorage(filePath, file.buffer, file.mimetype);
+        return { url };
     }
     async createForum(userId, titulo, descripcion, categoria, imagenUrl) {
-        const { data, error } = await this.supabaseService.getClient().schema('comunidad').from('foros').insert({
-            titulo: titulo.length > 200 ? titulo.substring(0, 200) : titulo,
-            descripcion: descripcion.length > 200 ? descripcion.substring(0, 200) : descripcion,
-            categoria,
-            imagen_url: imagenUrl || null,
-            idusuario: userId,
-            estado: 'Abierto'
-        }).select().single();
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return data;
+        return this.communityRepository.createForum(userId, titulo, descripcion, categoria, imagenUrl);
     }
     async updateForum(userId, forumId, updates) {
-        const serviceClient = this.supabaseService.getClient();
-        const { data: forumData } = await serviceClient.schema('comunidad').from('foros').select('idusuario').eq('idforo', forumId).single();
+        const forumData = await this.communityRepository.getForumOwner(forumId);
         if (!forumData || forumData.idusuario !== userId) {
             throw new common_1.UnauthorizedException('No tienes permiso para editar este foro');
         }
-        const { data, error } = await serviceClient.schema('comunidad').from('foros').update({
-            titulo: updates.titulo,
-            descripcion: updates.descripcion,
-            categoria: updates.categoria,
-            imagen_url: updates.imagenUrl,
-        }).eq('idforo', forumId).select().single();
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return data;
+        return this.communityRepository.updateForum(forumId, updates);
     }
     async deleteForum(userId, forumId) {
-        const serviceClient = this.supabaseService.getClient();
-        const { data: forumData } = await serviceClient.schema('comunidad').from('foros').select('idusuario').eq('idforo', forumId).single();
+        const forumData = await this.communityRepository.getForumOwner(forumId);
         if (!forumData || forumData.idusuario !== userId) {
             throw new common_1.UnauthorizedException('No tienes permiso para eliminar este foro');
         }
-        const { error } = await serviceClient.schema('comunidad').from('foros').delete().eq('idforo', forumId);
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return { success: true };
+        return this.communityRepository.deleteForum(forumId);
     }
     async addComment(userId, forumId, contenido, parentId, imagenUrl) {
         if (!contenido && !imagenUrl)
             throw new common_1.BadRequestException('El contenido o una imagen son requeridos');
-        const { data, error } = await this.supabaseService.getClient().schema('comunidad').from('comentarios').insert({
-            contenido,
-            idforo: forumId,
-            idcomentario_padre: parentId || null,
-            idusuario: userId,
-            imagen_url: imagenUrl || null,
-        }).select().single();
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return data;
+        return this.communityRepository.createComment(userId, forumId, contenido, parentId, imagenUrl);
     }
     async updateComment(userId, commentId, contenido, imagenUrl) {
-        const serviceClient = this.supabaseService.getClient();
-        const { data: commentData } = await serviceClient.schema('comunidad').from('comentarios').select('idusuario').eq('idcomentario', commentId).single();
+        const commentData = await this.communityRepository.getCommentOwner(commentId);
         if (!commentData || commentData.idusuario !== userId) {
             throw new common_1.UnauthorizedException('No tienes permiso para editar este comentario');
         }
-        const { data, error } = await serviceClient.schema('comunidad').from('comentarios').update({
-            contenido,
-            imagen_url: imagenUrl,
-        }).eq('idcomentario', commentId).select().single();
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return data;
+        return this.communityRepository.updateComment(commentId, contenido, imagenUrl);
     }
     async deleteComment(userId, commentId) {
-        const serviceClient = this.supabaseService.getClient();
-        const { data: commentData } = await serviceClient.schema('comunidad').from('comentarios').select('idusuario').eq('idcomentario', commentId).single();
+        const commentData = await this.communityRepository.getCommentOwner(commentId);
         if (!commentData || commentData.idusuario !== userId) {
             throw new common_1.UnauthorizedException('No tienes permiso para eliminar este comentario');
         }
-        const { error } = await serviceClient.schema('comunidad').from('comentarios').delete().eq('idcomentario', commentId);
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return { success: true };
+        return this.communityRepository.deleteComment(commentId);
     }
     async addReaction(userId, targetType, targetId, tipo) {
-        const serviceClient = this.supabaseService.getClient();
         const dbTipo = tipo === 'LIKE' ? 'Me gusta' : tipo;
-        const insertData = {
-            tipo: dbTipo,
-            idusuario: userId,
-        };
         if (targetType === 'foro') {
-            const { data: existing } = await serviceClient.schema('comunidad').from('usuario_foro')
-                .select('*').match({ idforo: targetId, idusuario: userId }).maybeSingle();
+            const existing = await this.communityRepository.getForumSubscription(targetId, userId);
             if (existing) {
-                const { error } = await serviceClient.schema('comunidad').from('usuario_foro')
-                    .delete().match({ idforo: targetId, idusuario: userId });
-                if (error)
-                    throw new common_1.BadRequestException(error.message);
+                await this.communityRepository.removeForumSubscription(targetId, userId);
                 return { toggled: 'removed' };
             }
-            const { data, error } = await serviceClient.schema('comunidad').from('usuario_foro')
-                .insert({ idforo: targetId, idusuario: userId }).select().single();
-            if (error)
-                throw new common_1.BadRequestException(error.message);
+            const data = await this.communityRepository.addForumSubscription(targetId, userId);
             return { toggled: 'added', data };
         }
-        if (targetType === 'comentario') {
+        const insertData = { tipo: dbTipo, idusuario: userId };
+        if (targetType === 'comentario')
             insertData.idcomentario = targetId;
-        }
-        else if (targetType === 'articulo') {
+        else if (targetType === 'articulo')
             insertData.idarticulo = targetId;
-        }
-        const whereClause = targetType === 'comentario'
-            ? { idcomentario: targetId }
-            : { idarticulo: targetId };
-        const { data: existing } = await serviceClient.schema('comunidad').from('reacciones')
-            .select('idreaccion')
-            .match({ ...whereClause, idusuario: userId, tipo: dbTipo })
-            .maybeSingle();
+        const existing = await this.communityRepository.getReaction(targetType, targetId, userId, dbTipo);
         if (existing) {
-            const { error: delError } = await serviceClient.schema('comunidad').from('reacciones')
-                .delete()
-                .eq('idreaccion', existing.idreaccion);
-            if (delError)
-                throw new common_1.BadRequestException(delError.message);
+            await this.communityRepository.removeReaction(existing.idreaccion);
             return { toggled: 'removed' };
         }
-        const { data, error } = await serviceClient.schema('comunidad').from('reacciones').insert(insertData).select().single();
-        if (error)
-            throw new common_1.BadRequestException(error.message);
+        const data = await this.communityRepository.addReaction(insertData);
         return { toggled: 'added', data };
     }
     async getRetos() {
-        const { data, error } = await this.getClient()
-            .schema('comunidad')
-            .from('retos')
-            .select('*')
-            .order('fechainicio', { ascending: false });
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return data;
+        return this.communityRepository.getRetos();
     }
     async joinReto(accessToken, retoId) {
-        const userClient = this.getClient(accessToken);
-        const { data: userData, error: userError } = await userClient.auth.getUser();
-        if (userError || !userData.user)
-            throw new common_1.UnauthorizedException('No autenticado');
-        const { data, error } = await userClient.schema('comunidad').from('usuario_reto').insert({
-            idusuario: userData.user.id,
-            idreto: retoId,
-            estado: 'En curso'
-        }).select().single();
-        if (error) {
-            if (error.code === '23505')
-                throw new common_1.BadRequestException('Ya estás participando en este reto');
-            throw new common_1.BadRequestException(error.message);
-        }
-        return data;
+        const user = await this.communityRepository.validateUserTokenFromClient(accessToken);
+        return this.communityRepository.joinReto(user.id, retoId);
     }
     async getEspecialistas() {
-        const { data: roleData, error: roleError } = await this.getClient()
-            .schema('gestion')
-            .from('roles')
-            .select('idrol')
-            .eq('nombrerol', 'Entrenador')
-            .single();
-        if (roleError || !roleData)
-            throw new common_1.BadRequestException('No se encontró el rol de Entrenador');
-        const { data, error } = await this.getClient()
-            .schema('gestion')
-            .from('usuarios')
-            .select('idusuario, nombre, apellido, fotoperfil, genero')
-            .eq('idrol', roleData.idrol)
-            .eq('estado', 'Activo');
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        const ids = data.map((u) => u.idusuario);
+        const idrol = await this.communityRepository.getCoachRoleId();
+        const users = await this.communityRepository.getUsersByRole(idrol);
+        const ids = users.map((u) => u.idusuario);
         if (ids.length > 0) {
-            const { data: entrenadoresData } = await this.getClient()
-                .schema('seguimiento')
-                .from('entrenadores')
-                .select('idusuario, especialidad')
-                .in('idusuario', ids);
-            if (entrenadoresData) {
-                return data.map((u) => {
-                    const e = entrenadoresData.find((ed) => ed.idusuario === u.idusuario);
-                    return { ...u, especialidad: e?.especialidad || 'Especialista en Hábitos' };
-                });
-            }
+            const entrenadoresData = await this.communityRepository.getCoachSpecialties(ids);
+            return users.map((u) => {
+                const e = entrenadoresData.find((ed) => ed.idusuario === u.idusuario);
+                return { ...u, especialidad: e?.especialidad || 'Especialista en Hábitos' };
+            });
         }
-        return data;
+        return users;
     }
     async getArticulos() {
-        const { data, error } = await this.getClient()
-            .schema('comunidad')
-            .from('articulos')
-            .select('*')
-            .eq('estado', 'Publicado')
-            .order('fechapublicacion', { ascending: false });
-        if (error)
-            throw new common_1.BadRequestException(error.message);
-        return data;
+        return this.communityRepository.getArticulos();
     }
     async getCommunityHabits() {
-        const { data, error } = await this.getClient()
-            .schema('comunidad')
-            .from('habitos_publicados')
-            .select('idpublicacion, nombre_habito, descripcion, meta_diaria, unidad_medida, likes, clones_count, idcategoria, idusuario')
-            .order('fechapublicacion', { ascending: false })
-            .limit(50);
-        if (error) {
-            console.error('Error fetching community habits:', error.message);
-            return [];
-        }
+        const data = await this.communityRepository.getCommunityHabits();
         const categoryIds = [...new Set(data.map((h) => h.idcategoria))];
         let categoriesMap = {};
         if (categoryIds.length > 0) {
-            const { data: catData, error: catError } = await this.getClient()
-                .schema('seguimiento')
-                .from('categorias_habitos')
-                .select('idcategoria, nombre')
-                .in('idcategoria', categoryIds);
-            if (catError)
-                console.error('Error fetching categories:', catError.message);
-            catData?.forEach((c) => categoriesMap[c.idcategoria] = c);
+            const catData = await this.communityRepository.getHabitCategories(categoryIds);
+            catData.forEach((c) => categoriesMap[c.idcategoria] = c);
         }
         return data.map((h) => {
             const cat = categoriesMap[h.idcategoria] || {};
@@ -374,125 +199,54 @@ let CommunityService = class CommunityService {
                 idcategoria: h.idcategoria,
                 idusuario: h.idusuario,
                 clones_count: h.clones_count || 0,
-                categoria_nombre: cat.nombre || 'General'
+                categoria_nombre: cat.nombre || 'General',
             };
         });
     }
     async cloneHabit(token, idhabito) {
-        try {
-            const supabase = this.getClient(token);
-            const { data: userData, error: authError } = await supabase.auth.getUser();
-            if (authError || !userData?.user)
-                throw new common_1.UnauthorizedException('Token inválido');
-            const idusuario = userData.user.id;
-            const { data: originalHabit, error: getError } = await supabase
-                .schema('comunidad')
-                .from('habitos_publicados')
-                .select('*')
-                .eq('idpublicacion', idhabito)
-                .single();
-            if (getError || !originalHabit)
-                throw new common_1.BadRequestException('Hábito comunitario no encontrado');
-            await supabase.rpc('increment_clones_count', { row_id: idhabito });
-            await supabase.schema('comunidad').from('habitos_publicados')
-                .update({ clones_count: (originalHabit.clones_count || 0) + 1 })
-                .eq('idpublicacion', idhabito);
-            const newHabit = {
-                nombre: originalHabit.nombre_habito,
-                descripcion: originalHabit.descripcion,
-                meta_diaria: originalHabit.meta_diaria,
-                unidad_medida: originalHabit.unidad_medida,
-                idcategoria: originalHabit.idcategoria,
-                puntos: originalHabit.likes || 0,
-                idusuario: idusuario,
-                estado: 'Activo'
-            };
-            const { data, error } = await supabase
-                .schema('seguimiento')
-                .from('habitos')
-                .insert(newHabit)
-                .select()
-                .single();
-            if (error)
-                throw new common_1.BadRequestException(error.message);
-            return data;
-        }
-        catch (e) {
-            throw new common_1.BadRequestException('Error al clonar: ' + e.message);
-        }
+        const user = await this.communityRepository.validateUserTokenFromClient(token);
+        const originalHabit = await this.communityRepository.getPublishedHabit(idhabito);
+        await this.communityRepository.updateClonesCount(idhabito, (originalHabit.clones_count || 0) + 1);
+        const newHabit = {
+            nombre: originalHabit.nombre_habito,
+            descripcion: originalHabit.descripcion,
+            meta_diaria: originalHabit.meta_diaria,
+            unidad_medida: originalHabit.unidad_medida,
+            idcategoria: originalHabit.idcategoria,
+            puntos: originalHabit.likes || 0,
+            idusuario: user.id,
+            estado: 'Activo',
+        };
+        return this.communityRepository.createUserHabit(newHabit);
     }
     async shareHabit(token, idhabito) {
-        try {
-            const supabase = this.getClient(token);
-            const { data: userData, error: authError } = await supabase.auth.getUser();
-            if (authError || !userData?.user)
-                throw new common_1.UnauthorizedException('Token inválido');
-            const { data: habito, error } = await supabase
-                .schema('seguimiento')
-                .from('habitos')
-                .select('*')
-                .eq('idhabito', idhabito)
-                .eq('idusuario', userData.user.id)
-                .single();
-            if (error || !habito)
-                throw new common_1.BadRequestException('Hábito no encontrado o no pertenece al usuario: ' + (error?.message || ''));
-            const { data: publicado, error: insertError } = await supabase
-                .schema('comunidad')
-                .from('habitos_publicados')
-                .insert({
-                nombre_habito: habito.nombre,
-                descripcion: habito.descripcion,
-                meta_diaria: habito.meta_diaria,
-                unidad_medida: habito.unidad_medida,
-                idcategoria: habito.idcategoria,
-                likes: habito.puntos,
-                dias_semana: habito.dias_semana || [1, 2, 3, 4, 5, 6, 7],
-                idusuario: userData.user.id,
-                clones_count: 0
-            })
-                .select()
-                .single();
-            if (insertError)
-                throw new common_1.BadRequestException(`No se pudo compartir: ${insertError.message}`);
-            return publicado;
-        }
-        catch (e) {
-            throw new common_1.BadRequestException('Excepción atrapada: ' + e.message);
-        }
+        const user = await this.communityRepository.validateUserTokenFromClient(token);
+        const habito = await this.communityRepository.getUserHabit(idhabito, user.id);
+        const habitData = {
+            nombre_habito: habito.nombre,
+            descripcion: habito.descripcion,
+            meta_diaria: habito.meta_diaria,
+            unidad_medida: habito.unidad_medida,
+            idcategoria: habito.idcategoria,
+            likes: habito.puntos,
+            dias_semana: habito.dias_semana || [1, 2, 3, 4, 5, 6, 7],
+            idusuario: user.id,
+            clones_count: 0,
+        };
+        return this.communityRepository.publishHabit(habitData);
     }
     async deleteSharedHabit(token, idhabito) {
-        try {
-            const supabase = this.getClient(token);
-            const { data: userData, error: authError } = await supabase.auth.getUser();
-            if (authError || !userData?.user)
-                throw new common_1.UnauthorizedException('Token inválido');
-            const { data: original, error: checkError } = await supabase
-                .schema('comunidad')
-                .from('habitos_publicados')
-                .select('idusuario')
-                .eq('idpublicacion', idhabito)
-                .single();
-            if (checkError || !original)
-                throw new common_1.BadRequestException('Hábito comunitario no encontrado');
-            if (original.idusuario !== userData.user.id)
-                throw new common_1.UnauthorizedException('No tienes permiso para eliminar este hábito');
-            const { error: deleteError } = await supabase
-                .schema('comunidad')
-                .from('habitos_publicados')
-                .delete()
-                .eq('idpublicacion', idhabito);
-            if (deleteError)
-                throw new common_1.BadRequestException(`No se pudo eliminar: ${deleteError.message}`);
-            return { success: true };
+        const user = await this.communityRepository.validateUserTokenFromClient(token);
+        const original = await this.communityRepository.getPublishedHabitOwner(idhabito);
+        if (original.idusuario !== user.id) {
+            throw new common_1.UnauthorizedException('No tienes permiso para eliminar este hábito');
         }
-        catch (e) {
-            throw new common_1.BadRequestException('Excepción atrapada al eliminar: ' + e.message);
-        }
+        return this.communityRepository.deletePublishedHabit(idhabito);
     }
 };
 exports.CommunityService = CommunityService;
 exports.CommunityService = CommunityService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [supabase_service_1.SupabaseService])
+    __metadata("design:paramtypes", [community_repository_1.CommunityRepository])
 ], CommunityService);
 //# sourceMappingURL=community.service.js.map

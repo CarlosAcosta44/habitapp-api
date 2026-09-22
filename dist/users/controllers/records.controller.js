@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecordsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const jwt_auth_guard_1 = require("../../auth/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const records_service_1 = require("../services/records.service");
 const create_record_dto_1 = require("../dto/create-record.dto");
 let RecordsController = class RecordsController {

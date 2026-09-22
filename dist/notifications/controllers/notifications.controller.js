@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const jwt_auth_guard_1 = require("../../auth/jwt-auth.guard");
-const roles_guard_1 = require("../../auth/roles.guard");
-const current_user_decorator_1 = require("../../auth/current-user.decorator");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
+const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const notification_dto_1 = require("../dto/notification.dto");
 const notifications_service_1 = require("../services/notifications.service");
 let NotificationsController = class NotificationsController {

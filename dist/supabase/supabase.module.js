@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SupabaseModule = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("./supabase.service");
+const supabase_service_1 = require("./services/supabase.service");
 let SupabaseModule = class SupabaseModule {
 };
 exports.SupabaseModule = SupabaseModule;

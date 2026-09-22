@@ -1,4 +1,4 @@
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 import { NotificationRow } from '../entities/notification.entity';
 import { CreateNotificationDto } from '../dto/notification.dto';
 export declare class NotificationsRepository {
@@ -9,4 +9,5 @@ export declare class NotificationsRepository {
     create(dto: CreateNotificationDto): Promise<NotificationRow>;
     markAsRead(notificationId: string, userId: string): Promise<void>;
     markAllAsRead(userId: string): Promise<void>;
+    getUserEmail(userId: string): Promise<string | null>;
 }

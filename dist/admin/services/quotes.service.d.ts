@@ -1,6 +1,6 @@
-import { SupabaseService } from '../../supabase/supabase.service';
+import { QuotesRepository } from '../repositories/quotes.repository';
 export declare class QuotesService {
-    private readonly supabaseService;
-    constructor(supabaseService: SupabaseService);
+    private readonly quotesRepository;
+    constructor(quotesRepository: QuotesRepository);
     getDailyQuote(): Promise<any>;
 }

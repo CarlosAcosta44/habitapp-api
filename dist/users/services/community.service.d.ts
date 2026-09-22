@@ -1,11 +1,10 @@
-import { SupabaseService } from '../../supabase/supabase.service';
+import { CommunityRepository } from '../repositories/community.repository';
 export declare class CommunityService {
-    private readonly supabaseService;
-    constructor(supabaseService: SupabaseService);
-    private getClient;
+    private readonly communityRepository;
+    constructor(communityRepository: CommunityRepository);
     private decodeJwtUserId;
-    getForums(accessToken?: string): Promise<any>;
-    getCommentsByForumId(forumId: string, accessToken?: string): Promise<any>;
+    getForums(accessToken?: string): Promise<any[]>;
+    getCommentsByForumId(forumId: string, accessToken?: string): Promise<any[]>;
     uploadImage(accessToken: string, file: Express.Multer.File): Promise<{
         url: string;
     }>;
@@ -31,11 +30,22 @@ export declare class CommunityService {
         toggled: string;
         data: any;
     }>;
-    getRetos(): Promise<any>;
+    getRetos(): Promise<any[]>;
     joinReto(accessToken: string, retoId: string): Promise<any>;
-    getEspecialistas(): Promise<any>;
-    getArticulos(): Promise<any>;
-    getCommunityHabits(): Promise<any>;
+    getEspecialistas(): Promise<any[]>;
+    getArticulos(): Promise<any[]>;
+    getCommunityHabits(): Promise<{
+        idhabito: any;
+        nombre: any;
+        descripcion: any;
+        meta_diaria: any;
+        unidad_medida: any;
+        puntos: any;
+        idcategoria: any;
+        idusuario: any;
+        clones_count: any;
+        categoria_nombre: any;
+    }[]>;
     cloneHabit(token: string, idhabito: string): Promise<any>;
     shareHabit(token: string, idhabito: string): Promise<any>;
     deleteSharedHabit(token: string, idhabito: string): Promise<{

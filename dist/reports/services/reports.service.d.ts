@@ -1,7 +1,7 @@
-import { SupabaseService } from '../../supabase/supabase.service';
+import { ReportsRepository } from '../repositories/reports.repository';
 export declare class ReportsService {
-    private readonly supabaseService;
-    constructor(supabaseService: SupabaseService);
+    private readonly reportsRepository;
+    constructor(reportsRepository: ReportsRepository);
     getRanking(): Promise<any[]>;
     getUserSummary(userId: string, period?: 'week' | 'month' | 'year'): Promise<{
         userId: string;

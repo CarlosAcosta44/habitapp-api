@@ -1,4 +1,4 @@
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 export declare class RecordsRepository {
     private readonly supabaseService;
     constructor(supabaseService: SupabaseService);

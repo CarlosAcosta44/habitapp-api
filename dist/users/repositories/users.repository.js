@@ -12,7 +12,7 @@ var UsersRepository_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersRepository = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("../../supabase/supabase.service");
+const supabase_service_1 = require("../../supabase/services/supabase.service");
 const user_profile_dto_1 = require("../dto/user-profile.dto");
 let UsersRepository = UsersRepository_1 = class UsersRepository {
     supabaseService;
@@ -43,7 +43,8 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
         hoy.setHours(0, 0, 0, 0);
         if (activeHabits) {
             for (const h of activeHabits) {
-                let hStart = new Date(h.fechainicio);
+                const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
+                let hStart = new Date(hYear, hMonth - 1, hDay);
                 hStart.setHours(0, 0, 0, 0);
                 let current = new Date(hStart);
                 while (current <= hoy) {
@@ -68,11 +69,15 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
         let checkDate = new Date();
         let firstCheck = true;
         while (true) {
-            const dStr = checkDate.toISOString().split('T')[0];
+            const y = checkDate.getFullYear();
+            const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+            const d = String(checkDate.getDate()).padStart(2, '0');
+            const dStr = `${y}-${m}-${d}`;
             let jsDay = checkDate.getDay();
             let habDay = jsDay === 0 ? 7 : jsDay;
             const scheduledForDay = allHabits?.filter(h => {
-                const startDate = new Date(h.fechainicio);
+                const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
+                const startDate = new Date(hYear, hMonth - 1, hDay);
                 startDate.setHours(0, 0, 0, 0);
                 return checkDate >= startDate && h.dias_semana && h.dias_semana.includes(habDay);
             }) || [];
@@ -96,7 +101,12 @@ let UsersRepository = UsersRepository_1 = class UsersRepository {
             checkDate.setDate(checkDate.getDate() - 1);
             firstCheck = false;
             if (allHabits && allHabits.length > 0) {
-                const oldestHabitDate = new Date(Math.min(...allHabits.map(h => new Date(h.fechainicio).getTime())));
+                const oldestTime = Math.min(...allHabits.map(h => {
+                    const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
+                    return new Date(hYear, hMonth - 1, hDay).getTime();
+                }));
+                const oldestHabitDate = new Date(oldestTime);
+                oldestHabitDate.setHours(0, 0, 0, 0);
                 if (checkDate < oldestHabitDate)
                     break;
             }

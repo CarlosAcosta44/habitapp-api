@@ -1,4 +1,4 @@
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 import { RoleName } from '../dto/user-profile.dto';
 import { UserProfileRow } from '../entities/user-profile.entity';
 export declare class UsersRepository {

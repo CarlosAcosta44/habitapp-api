@@ -2,8 +2,8 @@ import { CommunityService } from '../services/community.service';
 export declare class ComunidadController {
     private readonly comunidadService;
     constructor(comunidadService: CommunityService);
-    getForums(req: any): Promise<any>;
-    getComments(req: any, id: string): Promise<any>;
+    getForums(req: any): Promise<any[]>;
+    getComments(req: any, id: string): Promise<any[]>;
     createForum(req: any, titulo: string, descripcion: string, categoria: string, imagenUrl?: string): Promise<any>;
     uploadImage(req: any, file: Express.Multer.File): Promise<{
         url: string;
@@ -24,11 +24,22 @@ export declare class ComunidadController {
         toggled: string;
         data: any;
     }>;
-    getRetos(): Promise<any>;
+    getRetos(): Promise<any[]>;
     joinReto(req: any, retoId: string): Promise<any>;
-    getEspecialistas(): Promise<any>;
-    getArticulos(): Promise<any>;
-    getCommunityHabits(): Promise<any>;
+    getEspecialistas(): Promise<any[]>;
+    getArticulos(): Promise<any[]>;
+    getCommunityHabits(): Promise<{
+        idhabito: any;
+        nombre: any;
+        descripcion: any;
+        meta_diaria: any;
+        unidad_medida: any;
+        puntos: any;
+        idcategoria: any;
+        idusuario: any;
+        clones_count: any;
+        categoria_nombre: any;
+    }[]>;
     cloneHabit(req: any, idhabito: string): Promise<any>;
     shareHabit(req: any, idhabito: string): Promise<any>;
     deleteSharedHabit(req: any, idhabito: string): Promise<{

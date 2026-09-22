@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HabitsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const jwt_auth_guard_1 = require("../../auth/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const habits_service_1 = require("../services/habits.service");
 const create_habit_dto_1 = require("../dto/create-habit.dto");
 const update_habit_dto_1 = require("../dto/update-habit.dto");
@@ -145,7 +145,7 @@ exports.HabitsController = HabitsController = __decorate([
     (0, swagger_1.ApiTags)('habits'),
     (0, swagger_1.ApiCookieAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Controller)('habits'),
+    (0, common_1.Controller)('users/habits'),
     __metadata("design:paramtypes", [habits_service_1.HabitsService])
 ], HabitsController);
 //# sourceMappingURL=habits.controller.js.map

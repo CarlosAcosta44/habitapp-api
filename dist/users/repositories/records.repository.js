@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecordsRepository = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("../../supabase/supabase.service");
+const supabase_service_1 = require("../../supabase/services/supabase.service");
 let RecordsRepository = class RecordsRepository {
     supabaseService;
     constructor(supabaseService) {

@@ -3,7 +3,7 @@ export declare class ReportsController {
     private readonly reportsService;
     constructor(reportsService: ReportsService);
     getRanking(): Promise<any[]>;
-    getUserSummary(userId: string): Promise<{
+    getUserSummary(userId: string, period?: 'week' | 'month' | 'year'): Promise<{
         userId: string;
         nombre: any;
         puntos_totales: any;

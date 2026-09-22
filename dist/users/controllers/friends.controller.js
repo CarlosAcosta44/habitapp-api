@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FriendsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
-const jwt_auth_guard_1 = require("../../auth/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const friends_service_1 = require("../services/friends.service");
 const create_record_dto_1 = require("../dto/create-record.dto");
 let FriendsController = class FriendsController {
@@ -106,7 +106,7 @@ exports.FriendsController = FriendsController = __decorate([
     (0, swagger_1.ApiTags)('friends'),
     (0, swagger_1.ApiCookieAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.Controller)('friends'),
+    (0, common_1.Controller)('users/friends'),
     __metadata("design:paramtypes", [friends_service_1.FriendsService])
 ], FriendsController);
 //# sourceMappingURL=friends.controller.js.map

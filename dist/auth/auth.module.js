@@ -8,11 +8,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
-const auth_controller_1 = require("./auth.controller");
-const auth_service_1 = require("./auth.service");
+const auth_controller_1 = require("./controllers/auth.controller");
+const auth_service_1 = require("./services/auth.service");
+const auth_repository_1 = require("./repositories/auth.repository");
 const supabase_module_1 = require("../supabase/supabase.module");
-const jwt_auth_guard_1 = require("./jwt-auth.guard");
-const roles_guard_1 = require("./roles.guard");
+const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const roles_guard_1 = require("../common/guards/roles.guard");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -20,8 +21,8 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [supabase_module_1.SupabaseModule],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard],
-        exports: [auth_service_1.AuthService, jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard],
+        providers: [auth_service_1.AuthService, auth_repository_1.AuthRepository, jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard],
+        exports: [auth_service_1.AuthService, auth_repository_1.AuthRepository, jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

@@ -11,22 +11,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportsService = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("../../supabase/supabase.service");
+const reports_repository_1 = require("../repositories/reports.repository");
 let ReportsService = class ReportsService {
-    supabaseService;
-    constructor(supabaseService) {
-        this.supabaseService = supabaseService;
+    reportsRepository;
+    constructor(reportsRepository) {
+        this.reportsRepository = reportsRepository;
     }
     async getRanking() {
         try {
-            const { data, error } = await this.supabaseService
-                .getClient()
-                .schema('gestion')
-                .from('vista_ranking')
-                .select('*')
-                .limit(100);
-            if (error) {
-                throw new Error(error.message);
+            const data = await this.reportsRepository.getRanking();
+            if (!data) {
+                throw new Error('No data found');
             }
             return data;
         }
@@ -36,37 +31,16 @@ let ReportsService = class ReportsService {
     }
     async getUserSummary(userId, period = 'week') {
         try {
-            const client = this.supabaseService.getClient();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const todayStr = today.toISOString().split('T')[0];
-            const { data: userProfile, error: profileError } = await client
-                .schema('gestion')
-                .from('usuarios')
-                .select('nombre, puntostotales')
-                .eq('idusuario', userId)
-                .single();
-            if (profileError)
-                throw new Error(`Profile error: ${profileError.message}`);
-            const { data: allHabits, error: habitsError } = await client
-                .schema('seguimiento')
-                .from('habitos')
-                .select('idhabito, fechainicio, dias_semana, estado, nombre')
-                .eq('idusuario', userId);
-            if (habitsError)
-                throw new Error(`Habits error: ${habitsError.message}`);
+            const userProfile = await this.reportsRepository.getUserProfile(userId);
+            const allHabits = await this.reportsRepository.getAllHabits(userId);
             const activeHabits = allHabits.filter(h => h.estado === 'Activo');
             const oneYearAgo = new Date(today);
             oneYearAgo.setFullYear(today.getFullYear() - 1);
-            const { data: records, error: recordsError } = await client
-                .schema('seguimiento')
-                .schema('seguimiento').from('registro_habitos')
-                .select('idhabito, fecha, completado')
-                .eq('idusuario', userId)
-                .eq('completado', true)
-                .gte('fecha', oneYearAgo.toISOString().split('T')[0]);
-            if (recordsError)
-                throw new Error(`Records error: ${recordsError.message}`);
+            const startDate = oneYearAgo.toISOString().split('T')[0];
+            const records = await this.reportsRepository.getHabitRecordsFromDate(userId, startDate);
             let cumplimientoGlobal = 0;
             let totalEsperado = 0;
             let totalCumplido = 0;
@@ -201,15 +175,7 @@ let ReportsService = class ReportsService {
     }
     async getHabitsReport(userId) {
         try {
-            const client = this.supabaseService.getClient();
-            const { data: habitos, error } = await client
-                .schema('seguimiento')
-                .from('habitos')
-                .select('idhabito, nombre, descripcion, color')
-                .eq('idusuario', userId)
-                .eq('estado', 'Activo');
-            if (error)
-                throw new Error(error.message);
+            const habitos = await this.reportsRepository.getActiveHabitsInfo(userId);
             return habitos.map((h) => ({
                 idHabito: h.idhabito,
                 nombre: h.nombre,
@@ -236,6 +202,6 @@ let ReportsService = class ReportsService {
 exports.ReportsService = ReportsService;
 exports.ReportsService = ReportsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [supabase_service_1.SupabaseService])
+    __metadata("design:paramtypes", [reports_repository_1.ReportsRepository])
 ], ReportsService);
 //# sourceMappingURL=reports.service.js.map

@@ -12,6 +12,7 @@ const cache_manager_1 = require("@nestjs/cache-manager");
 const reports_controller_1 = require("./controllers/reports.controller");
 const reports_service_1 = require("./services/reports.service");
 const supabase_module_1 = require("../supabase/supabase.module");
+const reports_repository_1 = require("./repositories/reports.repository");
 let ReportsModule = class ReportsModule {
 };
 exports.ReportsModule = ReportsModule;
@@ -24,7 +25,7 @@ exports.ReportsModule = ReportsModule = __decorate([
             supabase_module_1.SupabaseModule,
         ],
         controllers: [reports_controller_1.ReportsController],
-        providers: [reports_service_1.ReportsService],
+        providers: [reports_service_1.ReportsService, reports_repository_1.ReportsRepository],
         exports: [reports_service_1.ReportsService],
     })
 ], ReportsModule);

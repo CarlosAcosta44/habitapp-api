@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const community_service_1 = require("../services/community.service");
 const swagger_1 = require("@nestjs/swagger");
-const jwt_auth_guard_1 = require("../../auth/jwt-auth.guard");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 let ComunidadController = class ComunidadController {
     comunidadService;
     constructor(comunidadService) {

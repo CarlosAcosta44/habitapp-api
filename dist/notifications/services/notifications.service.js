@@ -14,16 +14,13 @@ exports.NotificationsService = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_repository_1 = require("../repositories/notifications.repository");
 const email_service_1 = require("./email.service");
-const supabase_service_1 = require("../../supabase/supabase.service");
 let NotificationsService = NotificationsService_1 = class NotificationsService {
     notificationsRepository;
     emailService;
-    supabaseService;
     logger = new common_1.Logger(NotificationsService_1.name);
-    constructor(notificationsRepository, emailService, supabaseService) {
+    constructor(notificationsRepository, emailService) {
         this.notificationsRepository = notificationsRepository;
         this.emailService = emailService;
-        this.supabaseService = supabaseService;
     }
     async getNotificationsForUser(userId) {
         const rows = await this.notificationsRepository.findByUser(userId);
@@ -46,14 +43,11 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
     }
     async sendNotificationEmailAsync(userId, message, type) {
         try {
-            const { data, error } = await this.supabaseService
-                .getClient()
-                .auth.admin.getUserById(userId);
-            if (error || !data?.user || !data.user.email) {
+            const email = await this.notificationsRepository.getUserEmail(userId);
+            if (!email) {
                 this.logger.warn(`No se pudo obtener el correo para el usuario ${userId} para enviar la notificación.`);
                 return;
             }
-            const email = data.user.email;
             const subject = `HabitApp: Nueva notificación de ${type}`;
             const html = `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
@@ -89,7 +83,6 @@ exports.NotificationsService = NotificationsService;
 exports.NotificationsService = NotificationsService = NotificationsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [notifications_repository_1.NotificationsRepository,
-        email_service_1.EmailService,
-        supabase_service_1.SupabaseService])
+        email_service_1.EmailService])
 ], NotificationsService);
 //# sourceMappingURL=notifications.service.js.map

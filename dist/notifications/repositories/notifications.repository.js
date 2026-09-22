@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsRepository = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("../../supabase/supabase.service");
+const supabase_service_1 = require("../../supabase/services/supabase.service");
 let NotificationsRepository = class NotificationsRepository {
     supabaseService;
     constructor(supabaseService) {
@@ -87,6 +87,15 @@ let NotificationsRepository = class NotificationsRepository {
         if (error) {
             throw new common_1.InternalServerErrorException(`Error al marcar todas las notificaciones como leídas: ${error.message}`);
         }
+    }
+    async getUserEmail(userId) {
+        const { data, error } = await this.supabaseService
+            .getClient()
+            .auth.admin.getUserById(userId);
+        if (error || !data?.user?.email) {
+            return null;
+        }
+        return data.user.email;
     }
 };
 exports.NotificationsRepository = NotificationsRepository;

@@ -8,17 +8,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CoachModule = void 0;
 const common_1 = require("@nestjs/common");
-const coach_controller_1 = require("./coach.controller");
-const coach_service_1 = require("./coach.service");
+const supabase_module_1 = require("../supabase/supabase.module");
+const coach_controller_1 = require("./controllers/coach.controller");
+const coach_service_1 = require("./services/coach.service");
 const reports_module_1 = require("../reports/reports.module");
+const coach_repository_1 = require("./repositories/coach.repository");
 let CoachModule = class CoachModule {
 };
 exports.CoachModule = CoachModule;
 exports.CoachModule = CoachModule = __decorate([
     (0, common_1.Module)({
-        imports: [reports_module_1.ReportsModule],
+        imports: [supabase_module_1.SupabaseModule, reports_module_1.ReportsModule],
         controllers: [coach_controller_1.CoachController],
-        providers: [coach_service_1.CoachService],
+        providers: [coach_service_1.CoachService, coach_repository_1.CoachRepository],
     })
 ], CoachModule);
 //# sourceMappingURL=coach.module.js.map

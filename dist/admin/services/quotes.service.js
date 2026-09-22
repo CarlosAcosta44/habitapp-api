@@ -11,18 +11,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QuotesService = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_service_1 = require("../../supabase/supabase.service");
+const quotes_repository_1 = require("../repositories/quotes.repository");
 let QuotesService = class QuotesService {
-    supabaseService;
-    constructor(supabaseService) {
-        this.supabaseService = supabaseService;
+    quotesRepository;
+    constructor(quotesRepository) {
+        this.quotesRepository = quotesRepository;
     }
     async getDailyQuote() {
-        const supabase = this.supabaseService.getClient();
-        const { data, error } = await supabase.schema('comunidad').from('quotes').select('*');
-        if (error || !data || data.length === 0) {
-            if (error)
-                console.error("Error fetching qoutes:", error.message);
+        const data = await this.quotesRepository.getAllQuotes();
+        if (!data || data.length === 0) {
             return { phrase: 'Cada día es una nueva oportunidad.', author: 'HabitApp' };
         }
         const now = new Date();
@@ -36,6 +33,6 @@ let QuotesService = class QuotesService {
 exports.QuotesService = QuotesService;
 exports.QuotesService = QuotesService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [supabase_service_1.SupabaseService])
+    __metadata("design:paramtypes", [quotes_repository_1.QuotesRepository])
 ], QuotesService);
 //# sourceMappingURL=quotes.service.js.map
