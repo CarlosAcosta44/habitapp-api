@@ -3,10 +3,10 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseService } from '../supabase/supabase.service';
-import { CreateRoutineDto } from './dto/create-routine.dto';
-import { UpdateRoutineDto } from './dto/update-routine.dto';
-import { ReportsService } from '../reports/services/reports.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
+import { CreateRoutineDto } from '../dto/create-routine.dto';
+import { UpdateRoutineDto } from '../dto/update-routine.dto';
+import { ReportsService } from '../../reports/services/reports.service';
 
 @Injectable()
 export class CoachService {

@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { SupabaseService } from './supabase.service';
+import { SupabaseService } from './services/supabase.service';
 
 @Global()
 @Module({

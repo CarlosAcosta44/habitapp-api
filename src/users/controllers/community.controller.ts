@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Req, UseGuards, HttpCode, HttpStatu
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CommunityService } from '../services/community.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard'; // Asumiendo que existe
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'; // Asumiendo que existe
 
 @ApiTags('Comunidad')
 @Controller('users/community')

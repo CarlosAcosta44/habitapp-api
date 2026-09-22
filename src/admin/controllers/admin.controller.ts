@@ -15,14 +15,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { UserProfileDto, UserRole } from '../users/dto/user-profile.dto';
-import { AdminService } from './admin.service';
-import { UsersService } from '../users/services/users.service';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { UpdateUserRoleDto } from '../users/dto/update-user-role.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserProfileDto, UserRole } from '../../users/dto/user-profile.dto';
+import { AdminService } from '../services/admin.service';
+import { UsersService } from '../../users/services/users.service';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UpdateUserRoleDto } from '../../users/dto/update-user-role.dto';
 
 interface AuthenticatedUser {
   userId: string;

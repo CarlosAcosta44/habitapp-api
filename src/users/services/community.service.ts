@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 
 @Injectable()
 export class CommunityService {

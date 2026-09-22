@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RecordsService } from '../services/records.service';
 import { AvanzarProgresoDto, CreateRecordDto } from '../dto/create-record.dto';
 

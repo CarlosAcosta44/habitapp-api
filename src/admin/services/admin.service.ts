@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseService } from '../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 
 @Injectable()
 export class AdminService {

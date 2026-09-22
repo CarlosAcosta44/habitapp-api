@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from '../services/notifications.service';
 import { UserRole } from '../../users/dto/user-profile.dto';
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 
 describe('NotificationsController', () => {
   let controller: NotificationsController;

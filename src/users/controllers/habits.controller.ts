@@ -20,7 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { HabitsService } from '../services/habits.service';
 import { CreateHabitDto } from '../dto/create-habit.dto';
 import { UpdateHabitDto } from '../dto/update-habit.dto';

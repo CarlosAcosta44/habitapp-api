@@ -5,8 +5,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from './roles.decorator';
-import { UserRole } from '../users/dto/user-profile.dto';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+import { UserRole } from '../../users/dto/user-profile.dto';
 
 interface RequestWithUser {
   user?: {

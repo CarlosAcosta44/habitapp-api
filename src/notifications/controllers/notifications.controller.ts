@@ -15,9 +15,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { RolesGuard } from '../../auth/roles.guard';
-import { CurrentUser } from '../../auth/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '../../users/dto/user-profile.dto';
 import { NotificationDto } from '../dto/notification.dto';
 import { NotificationsService } from '../services/notifications.service';

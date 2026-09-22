@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { NotificationsRepository } from '../repositories/notifications.repository';
 import { EmailService } from './email.service';
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;

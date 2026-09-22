@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminService } from './admin.service';
-import { SupabaseService } from '../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 import {
   InternalServerErrorException,
   NotFoundException,

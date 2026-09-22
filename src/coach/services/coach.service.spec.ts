@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoachService } from './coach.service';
-import { SupabaseService } from '../supabase/supabase.service';
-import { ReportsService } from '../reports/services/reports.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
+import { ReportsService } from '../../reports/services/reports.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('CoachService', () => {

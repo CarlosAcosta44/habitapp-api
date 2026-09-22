@@ -2,7 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { SupabaseService } from '../../supabase/supabase.service';
+import { SupabaseService } from '../../supabase/services/supabase.service';
 
 interface RawHabito {
   idhabito: string;

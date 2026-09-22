@@ -5,7 +5,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { FriendsService } from '../services/friends.service';
 import { AddFriendDto } from '../dto/create-record.dto';
 

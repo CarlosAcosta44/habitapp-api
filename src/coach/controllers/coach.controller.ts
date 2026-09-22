@@ -16,15 +16,15 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CoachService } from './coach.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { ClientDto } from './dto/client.dto';
-import { UserRole } from '../users/dto/user-profile.dto';
-import { CreateRoutineDto } from './dto/create-routine.dto';
-import { UpdateRoutineDto } from './dto/update-routine.dto';
+import { CoachService } from '../services/coach.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ClientDto } from '../dto/client.dto';
+import { UserRole } from '../../users/dto/user-profile.dto';
+import { CreateRoutineDto } from '../dto/create-routine.dto';
+import { UpdateRoutineDto } from '../dto/update-routine.dto';
 
 @ApiTags('coach')
 @ApiBearerAuth('supabase-jwt')
