@@ -23,6 +23,7 @@ import { AdminService } from '../services/admin.service';
 import { UsersService } from '../../users/services/users.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UpdateUserRoleDto } from '../../users/dto/update-user-role.dto';
+import { DeleteForumResponseDto, DeleteCommentResponseDto } from '../dto/admin.dto';
 
 interface AuthenticatedUser {
   userId: string;
@@ -105,6 +106,7 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'Foro y comentarios eliminados exitosamente.',
+    type: DeleteForumResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
   @ApiResponse({
@@ -126,6 +128,7 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'Comentario eliminado exitosamente.',
+    type: DeleteCommentResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
   @ApiResponse({
