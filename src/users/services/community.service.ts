@@ -104,7 +104,7 @@ export class CommunityService {
   }
 
   async uploadImage(accessToken: string, file: Express.Multer.File): Promise<{ url: string }> {
-    const user = await this.communityRepository.validateUserToken(accessToken);
+    const user = await this.communityRepository.validateUserTokenFromClient(accessToken);
     const fileExt = file.originalname.split('.').pop() || 'png';
     const fileName = `${user.id}_${Date.now()}.${fileExt}`;
     const filePath = `${user.id}/${fileName}`;

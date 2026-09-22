@@ -103,6 +103,26 @@ export class CommunityRepository {
   }
 
   async deleteForum(forumId: string) {
+    // 1. Delete forum subscriptions
+    await this.client.schema('comunidad').from('usuario_foro').delete().eq('idforo', forumId);
+
+    // 2. Find all comments for this forum
+    const { data: comments } = await this.client
+      .schema('comunidad')
+      .from('comentarios')
+      .select('idcomentario')
+      .eq('idforo', forumId);
+
+    if (comments && comments.length > 0) {
+      const commentIds = comments.map(c => c.idcomentario);
+      // 3. Delete all reactions for these comments
+      await this.client.schema('comunidad').from('reacciones').delete().in('idcomentario', commentIds);
+    }
+
+    // 4. Delete all comments
+    await this.client.schema('comunidad').from('comentarios').delete().eq('idforo', forumId);
+
+    // 5. Finally, delete the forum
     const { error } = await this.client
       .schema('comunidad')
       .from('foros')
@@ -178,6 +198,35 @@ export class CommunityRepository {
   }
 
   async deleteComment(commentId: string) {
+    // 1. Find child comments (replies)
+    const { data: childComments } = await this.client
+      .schema('comunidad')
+      .from('comentarios')
+      .select('idcomentario')
+      .eq('idcomentario_padre', commentId);
+
+    const idsToDelete = [commentId];
+    if (childComments && childComments.length > 0) {
+      idsToDelete.push(...childComments.map(c => c.idcomentario));
+    }
+
+    // 2. Delete reactions for the comment and its children
+    await this.client
+      .schema('comunidad')
+      .from('reacciones')
+      .delete()
+      .in('idcomentario', idsToDelete);
+
+    // 3. Delete child comments
+    if (childComments && childComments.length > 0) {
+      await this.client
+        .schema('comunidad')
+        .from('comentarios')
+        .delete()
+        .eq('idcomentario_padre', commentId);
+    }
+
+    // 4. Finally, delete the main comment
     const { error } = await this.client
       .schema('comunidad')
       .from('comentarios')
