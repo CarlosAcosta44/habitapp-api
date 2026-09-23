@@ -104,23 +104,27 @@ export class CommunityRepository {
 
   async deleteForum(forumId: string) {
     // 1. Delete forum subscriptions
-    await this.client.schema('comunidad').from('usuario_foro').delete().eq('idforo', forumId);
+    const { error: subError } = await this.client.schema('comunidad').from('usuario_foro').delete().eq('idforo', forumId);
+    if (subError) throw new BadRequestException(`Failed to delete subscriptions: ${subError.message}`);
 
     // 2. Find all comments for this forum
-    const { data: comments } = await this.client
+    const { data: comments, error: comError } = await this.client
       .schema('comunidad')
       .from('comentarios')
       .select('idcomentario')
       .eq('idforo', forumId);
+    if (comError) throw new BadRequestException(`Failed to fetch comments: ${comError.message}`);
 
     if (comments && comments.length > 0) {
       const commentIds = comments.map(c => c.idcomentario);
       // 3. Delete all reactions for these comments
-      await this.client.schema('comunidad').from('reacciones').delete().in('idcomentario', commentIds);
+      const { error: reactError } = await this.client.schema('comunidad').from('reacciones').delete().in('idcomentario', commentIds);
+      if (reactError) throw new BadRequestException(`Failed to delete reactions: ${reactError.message}`);
     }
 
     // 4. Delete all comments
-    await this.client.schema('comunidad').from('comentarios').delete().eq('idforo', forumId);
+    const { error: delComError } = await this.client.schema('comunidad').from('comentarios').delete().eq('idforo', forumId);
+    if (delComError) throw new BadRequestException(`Failed to delete comments: ${delComError.message}`);
 
     // 5. Finally, delete the forum
     const { error } = await this.client
@@ -129,7 +133,7 @@ export class CommunityRepository {
       .delete()
       .eq('idforo', forumId);
 
-    if (error) throw new BadRequestException(error.message);
+    if (error) throw new BadRequestException(`Failed to delete forum: ${error.message}`);
     return { success: true };
   }
 
