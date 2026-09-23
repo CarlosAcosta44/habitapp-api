@@ -42,3 +42,6 @@ lerna-debug.log*
 # Supabase CLI
 supabase/.temp
 supabase/.branches
+
+# Dist
+/dist
