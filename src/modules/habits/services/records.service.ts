@@ -42,7 +42,7 @@ export class RecordsService {
       {
         idhabito: dto.idHabito,
         idusuario: userId,
-        fecha: '', // Calculated in repo
+        fecha: dto.fecha || '',
         observacion: dto.observacion,
         metaDiaria: habito.metaDiaria,
       },
@@ -87,7 +87,7 @@ export class RecordsService {
       {
         idhabito: dto.idHabito,
         idusuario: userId,
-        fecha: '', // Calculated in repo
+        fecha: dto.fecha || '',
         cantidadASumar: dto.cantidadASumar,
         metaDiaria: habito.metaDiaria,
         observacion: dto.observacion,

@@ -73,15 +73,15 @@ export class ReportsService {
 
         // Procesar días desde el más antiguo hasta hoy usando TODOS los hábitos
         const oldestHabitDate = new Date(Math.min(...allHabits.map(h => new Date(h.fechainicio).getTime())));
-        let currentDate = new Date(oldestHabitDate);
+        const currentDate = new Date(oldestHabitDate);
         currentDate.setHours(0,0,0,0);
 
         let globalCurrentStreak = 0;
 
         while (currentDate <= today) {
           const dStr = currentDate.toISOString().split('T')[0];
-          let jsDay = currentDate.getDay();
-          let habDay = jsDay === 0 ? 7 : jsDay;
+          const jsDay = currentDate.getDay();
+          const habDay = jsDay === 0 ? 7 : jsDay;
           const completedIds = recordsByDate[dStr] || [];
           
           let allCompletedForDay = true;

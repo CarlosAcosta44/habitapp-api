@@ -17,7 +17,8 @@ export class HabitsService {
   }
 
   async findAll(userId: string, estado?: string) {
-    return this.habitsRepo.findByUserId(userId, estado);
+    const estadoDb = (estado === "Archivado" || estado === "Pausado") ? "Inactivo" : estado;
+    return this.habitsRepo.findByUserId(userId, estadoDb);
   }
 
   async findById(idHabito: string, userId: string) {
@@ -43,8 +44,8 @@ export class HabitsService {
     const current = new Date(fechaInicio);
     while (current <= hoy) {
       // 0 = Sunday, 1 = Monday... in JS. Our dias_semana is 1=Monday...7=Sunday.
-      let jsDay = current.getDay();
-      let habitDay = jsDay === 0 ? 7 : jsDay;
+      const jsDay = current.getDay();
+      const habitDay = jsDay === 0 ? 7 : jsDay;
       if (habito.diasSemana.includes(habitDay)) {
         diasEsperados++;
       }
@@ -120,7 +121,7 @@ export class HabitsService {
     if (dto.descripcion !== undefined) dbUpdates.descripcion = dto.descripcion;
     if (dto.fechaFin !== undefined) dbUpdates.fechafin = dto.fechaFin;
     if (dto.estado !== undefined) {
-      if (dto.estado === 'Archivado' || dto.estado === 'Pausado') {
+      if (dto.estado === 'Archivado' || dto.estado === 'Pausado' || dto.estado === 'Inactivo') {
         dbUpdates.estado = 'Inactivo';
       } else {
         dbUpdates.estado = dto.estado;
@@ -145,7 +146,8 @@ export class HabitsService {
       throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
     if (habito.idUsuario !== userId)
       throw new ForbiddenException('Acceso denegado');
-    await this.habitsRepo.delete(idHabito);
+    // Soft-delete para preservar los registros históricos en seguimiento.registro_habitos
+    await this.habitsRepo.update(idHabito, { estado: 'Inactivo' });
     return { success: true };
   }
 }

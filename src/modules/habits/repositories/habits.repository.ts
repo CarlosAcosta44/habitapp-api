@@ -29,10 +29,16 @@ interface RawHabito {
 export class HabitsRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  private getLocalHoy(tzOffset: number): string {
-    const utcNow = new Date();
-    const localTime = new Date(utcNow.getTime() + tzOffset * 60000);
-    return localTime.toISOString().split('T')[0];
+  private getLocalHoy(tzOffset?: number): string {
+    const d = new Date();
+    if (typeof tzOffset === "number" && !isNaN(tzOffset) && tzOffset !== 0) {
+      const localTime = new Date(d.getTime() - tzOffset * 60000);
+      return localTime.toISOString().split("T")[0];
+    }
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   private get db() {
@@ -298,14 +304,10 @@ export class HabitsRepository {
   }
 
   async delete(idHabito: string): Promise<void> {
-    // Borrar registros y recordatorios primero
-    await this.db.schema('seguimiento').from('registro_habitos').delete().eq('idhabito', idHabito);
-
-    await this.db.from('recordatorios').delete().eq('idhabito', idHabito);
-
+    // Soft-delete: actualizamos el estado a 'Inactivo' para preservar el historial de registros
     const { error } = await this.db
       .from('habitos')
-      .delete()
+      .update({ estado: 'Inactivo' })
       .eq('idhabito', idHabito);
 
     if (error) {

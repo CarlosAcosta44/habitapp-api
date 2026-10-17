@@ -12,6 +12,11 @@ export class CreateRecordDto {
   @IsUUID()
   idHabito: string;
 
+  @ApiPropertyOptional({ description: 'Fecha YYYY-MM-DD del registro' })
+  @IsOptional()
+  @IsString()
+  fecha?: string;
+
   @ApiPropertyOptional({ description: 'Observación del registro' })
   @IsOptional()
   @IsString()
@@ -27,6 +32,11 @@ export class AvanzarProgresoDto {
   @ApiProperty({ description: 'Cantidad a sumar al progreso actual' })
   @IsNumber()
   cantidadASumar: number;
+
+  @ApiPropertyOptional({ description: 'Fecha YYYY-MM-DD del registro' })
+  @IsOptional()
+  @IsString()
+  fecha?: string;
 
   @ApiPropertyOptional({ description: 'Observación' })
   @IsOptional()

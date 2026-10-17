@@ -34,10 +34,10 @@ export class UpdateHabitDto {
 
   @ApiPropertyOptional({
     description: 'Estado del hábito',
-    enum: ['Activo', 'Completado', 'Cancelado', 'Archivado', 'Pausado'],
+    enum: ['Activo', 'Completado', 'Cancelado', 'Archivado', 'Pausado', 'Inactivo'],
   })
   @IsOptional()
-  @IsIn(['Activo', 'Completado', 'Cancelado', 'Archivado', 'Pausado'])
+  @IsIn(['Activo', 'Completado', 'Cancelado', 'Archivado', 'Pausado', 'Inactivo'])
   estado?: string;
 
   @ApiPropertyOptional({ description: 'Puntos que otorga el hábito (1-100)' })

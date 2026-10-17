@@ -16,10 +16,16 @@ interface RawRegistro {
 export class RecordsRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  private getLocalHoy(tzOffset: number): string {
-    const utcNow = new Date();
-    const localTime = new Date(utcNow.getTime() + tzOffset * 60000);
-    return localTime.toISOString().split('T')[0];
+  private getLocalHoy(tzOffset?: number): string {
+    const d = new Date();
+    if (typeof tzOffset === "number" && !isNaN(tzOffset) && tzOffset !== 0) {
+      const localTime = new Date(d.getTime() - tzOffset * 60000);
+      return localTime.toISOString().split("T")[0];
+    }
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   private get db() {
@@ -109,13 +115,15 @@ export class RecordsRepository {
     payload: {
       idhabito: string;
       idusuario: string;
-      fecha: string;
+      fecha?: string;
       observacion?: string;
       metaDiaria: number;
     },
     tzOffset: number = 0,
   ) {
-    const hoy = this.getLocalHoy(tzOffset);
+    const hoy = payload.fecha && /^\d{4}-\d{2}-\d{2}$/.test(payload.fecha)
+      ? payload.fecha
+      : this.getLocalHoy(tzOffset);
     const { data, error } = await this.db
       .schema('seguimiento').from('registro_habitos')
       .upsert(
@@ -164,14 +172,16 @@ export class RecordsRepository {
     payload: {
       idhabito: string;
       idusuario: string;
-      fecha: string;
+      fecha?: string;
       cantidadASumar: number;
       metaDiaria: number;
       observacion?: string;
     },
     tzOffset: number = 0,
   ) {
-    const hoy = this.getLocalHoy(tzOffset);
+    const hoy = payload.fecha && /^\d{4}-\d{2}-\d{2}$/.test(payload.fecha)
+      ? payload.fecha
+      : this.getLocalHoy(tzOffset);
     // Buscar progreso actual del día
     const { data: hoyRegs } = await this.db
       .schema('seguimiento').from('registro_habitos')
@@ -182,10 +192,10 @@ export class RecordsRepository {
       .limit(1);
 
     const currentProgress = (hoyRegs && hoyRegs.length > 0) ? (hoyRegs[0] as any).progreso_actual : 0;
-    const newProgress = Math.min(
+    const newProgress = Math.max(0, Math.min(
       payload.metaDiaria,
       currentProgress + payload.cantidadASumar,
-    );
+    ));
     const completado = newProgress >= payload.metaDiaria;
 
     const { data, error } = await this.db
@@ -241,8 +251,8 @@ export class RecordsRepository {
     }
 
     const hoyStr = this.getLocalHoy(tzOffset);
-    const ayerDate = new Date(new Date().getTime() + tzOffset * 60000 - 86400000);
-    const ayerStr = ayerDate.toISOString().split('T')[0];
+    const ayerDate = new Date(new Date(hoyStr + "T12:00:00Z").getTime() - 86400000);
+    const ayerStr = ayerDate.toISOString().split("T")[0];
 
     let rachaActual = 0;
     
