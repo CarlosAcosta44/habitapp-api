@@ -47,12 +47,12 @@ export class UsersRepository {
     if (activeHabits) {
       for (const h of activeHabits) {
         const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
-        let hStart = new Date(hYear, hMonth - 1, hDay);
+        const hStart = new Date(hYear, hMonth - 1, hDay);
         hStart.setHours(0,0,0,0);
-        let current = new Date(hStart);
+        const current = new Date(hStart);
         while (current <= hoy) {
-          let jsDay = current.getDay();
-          let habDay = jsDay === 0 ? 7 : jsDay;
+          const jsDay = current.getDay();
+          const habDay = jsDay === 0 ? 7 : jsDay;
           if (h.dias_semana.includes(habDay)) totalEsperado++;
           current.setDate(current.getDate() + 1);
         }
@@ -69,15 +69,15 @@ export class UsersRepository {
       }
     }
 
-    let checkDate = new Date();
+    const checkDate = new Date();
     let firstCheck = true;
     while (true) {
       const y = checkDate.getFullYear();
       const m = String(checkDate.getMonth() + 1).padStart(2, '0');
       const d = String(checkDate.getDate()).padStart(2, '0');
       const dStr = `${y}-${m}-${d}`;
-      let jsDay = checkDate.getDay();
-      let habDay = jsDay === 0 ? 7 : jsDay;
+      const jsDay = checkDate.getDay();
+      const habDay = jsDay === 0 ? 7 : jsDay;
       
       const scheduledForDay = allHabits?.filter(h => {
         // Parse YYYY-MM-DD strictly as local time

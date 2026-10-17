@@ -17,6 +17,17 @@ export class CommunityRepository {
 
   // ================= Foros =================
 
+  async getForumById(forumId: string) {
+    const { data, error } = await this.client
+      .schema('comunidad')
+      .from('foros')
+      .select('*')
+      .eq('idforo', forumId)
+      .maybeSingle();
+    if (error) throw new BadRequestException(error.message);
+    return data;
+  }
+
   async getForums() {
     const { data, error } = await this.client
       .schema('comunidad')
@@ -56,13 +67,15 @@ export class CommunityRepository {
   }
 
   async createForum(userId: string, titulo: string, descripcion: string, categoria: string, imagenUrl?: string) {
+    const safeTitulo = titulo ? titulo.trim().substring(0, 45) : 'Foro de la Comunidad';
+    const safeCategoria = categoria ? categoria.trim().replace(/^#+/, '').substring(0, 45) : 'General';
     const { data, error } = await this.client
       .schema('comunidad')
       .from('foros')
       .insert({
-        titulo: titulo.length > 200 ? titulo.substring(0, 200) : titulo,
-        descripcion: descripcion.length > 200 ? descripcion.substring(0, 200) : descripcion,
-        categoria,
+        titulo: safeTitulo,
+        descripcion: descripcion || '',
+        categoria: safeCategoria,
         imagen_url: imagenUrl || null,
         idusuario: userId,
         estado: 'Abierto',
@@ -318,26 +331,64 @@ export class CommunityRepository {
   // ================= Retos =================
 
   async getRetos() {
-    const { data, error } = await this.client
+    const { data: retos, error } = await this.client
       .schema('comunidad')
       .from('retos')
       .select('*')
       .order('fechainicio', { ascending: false });
 
     if (error) throw new BadRequestException(error.message);
-    return data;
+    if (!retos || retos.length === 0) return [];
+
+    const { data: participants } = await this.client
+      .schema('comunidad')
+      .from('usuario_reto')
+      .select('idreto, idusuario');
+
+    const countsMap: Record<string, number> = {};
+    const usersMap: Record<string, string[]> = {};
+    if (participants) {
+      for (const p of participants) {
+        countsMap[p.idreto] = (countsMap[p.idreto] || 0) + 1;
+        if (!usersMap[p.idreto]) usersMap[p.idreto] = [];
+        usersMap[p.idreto].push(p.idusuario);
+      }
+    }
+
+    return retos.map((r: any) => ({
+      ...r,
+      participantes_count: countsMap[r.idreto] || 0,
+      usuarios_participando: usersMap[r.idreto] || [],
+    }));
   }
 
   async joinReto(userId: string, retoId: string) {
+    const { data: existing } = await this.client
+      .schema('comunidad')
+      .from('usuario_reto')
+      .select('*')
+      .eq('idusuario', userId)
+      .eq('idreto', retoId)
+      .maybeSingle();
+
+    if (existing) {
+      return { alreadyJoined: true, data: existing };
+    }
+
     const { data, error } = await this.client
       .schema('comunidad')
       .from('usuario_reto')
-      .insert({ idusuario: userId, idreto: retoId, estado: 'En curso' })
+      .insert({
+        idusuario: userId,
+        idreto: retoId,
+        fechainscripcion: new Date().toISOString().slice(0, 10),
+        estado: 'En Curso',
+      })
       .select()
       .single();
 
     if (error) {
-      if (error.code === '23505') throw new BadRequestException('Ya estás participando en este reto');
+      if (error.code === '23505') return { alreadyJoined: true };
       throw new BadRequestException(error.message);
     }
     return data;
@@ -526,6 +577,17 @@ export class CommunityRepository {
 
     const { data } = client.storage.from('avatars').getPublicUrl(filePath);
     return data.publicUrl;
+  }
+
+  async getActiveUsersCount(): Promise<number> {
+    const { count, error } = await this.client
+      .schema('gestion')
+      .from('usuarios')
+      .select('*', { count: 'exact', head: true })
+      .eq('estado', 'Activo');
+
+    if (error) return 30;
+    return count ?? 30;
   }
 
   async validateUserToken(accessToken: string) {

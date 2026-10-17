@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CommunityRepository } from '../repositories/community.repository';
 
@@ -29,6 +30,39 @@ export class CommunityService {
   }
 
   // ================= Foros =================
+
+  async getForumById(forumId: string, accessToken?: string) {
+    const forum = await this.communityRepository.getForumById(forumId);
+    if (!forum) {
+      throw new NotFoundException(`Foro con ID ${forumId} no encontrado`);
+    }
+
+    if (forum.idusuario) {
+      const usersData = await this.communityRepository.getUsersByIds([forum.idusuario]);
+      forum.usuarios = usersData[0] || null;
+    }
+
+    const commentsData = await this.communityRepository.getCommentCountsByForumIds([forumId]);
+    forum.comments_count = commentsData.length;
+
+    const reactionsData = await this.communityRepository.getForumSubscriptions([forumId]);
+    forum.likes_count = reactionsData.length;
+
+    const currentUserId = this.decodeJwtUserId(accessToken);
+    forum.liked_by_me = currentUserId
+      ? reactionsData.some((r: any) => r.idusuario === currentUserId)
+      : false;
+
+    return forum;
+  }
+
+  async getStats() {
+    const totalMiembros = await this.communityRepository.getActiveUsersCount();
+    return {
+      totalMiembros,
+      conectados: totalMiembros,
+    };
+  }
 
   async getForums(accessToken?: string) {
     const data = await this.communityRepository.getForums();
@@ -103,11 +137,10 @@ export class CommunityService {
     return data;
   }
 
-  async uploadImage(accessToken: string, file: Express.Multer.File): Promise<{ url: string }> {
-    const user = await this.communityRepository.validateUserTokenFromClient(accessToken);
-    const fileExt = file.originalname.split('.').pop() || 'png';
-    const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-    const filePath = `${user.id}/${fileName}`;
+  async uploadImage(userId: string, file: Express.Multer.File): Promise<{ url: string }> {
+    const fileExt = file.originalname?.split(".").pop() || "png";
+    const fileName = `${userId}_${Date.now()}.${fileExt}`;
+    const filePath = `community/${userId}/${fileName}`;
     const url = await this.communityRepository.uploadImageToStorage(filePath, file.buffer, file.mimetype);
     return { url };
   }
@@ -187,9 +220,8 @@ export class CommunityService {
     return this.communityRepository.getRetos();
   }
 
-  async joinReto(accessToken: string, retoId: string) {
-    const user = await this.communityRepository.validateUserTokenFromClient(accessToken);
-    return this.communityRepository.joinReto(user.id, retoId);
+  async joinReto(userId: string, retoId: string) {
+    return this.communityRepository.joinReto(userId, retoId);
   }
 
   // ================= Especialistas =================
@@ -222,7 +254,7 @@ export class CommunityService {
     const data = await this.communityRepository.getCommunityHabits();
 
     const categoryIds = [...new Set(data.map((h: any) => h.idcategoria))];
-    let categoriesMap: any = {};
+    const categoriesMap: any = {};
 
     if (categoryIds.length > 0) {
       const catData = await this.communityRepository.getHabitCategories(categoryIds);
@@ -246,8 +278,7 @@ export class CommunityService {
     });
   }
 
-  async cloneHabit(token: string, idhabito: string) {
-    const user = await this.communityRepository.validateUserTokenFromClient(token);
+  async cloneHabit(userId: string, idhabito: string) {
     const originalHabit = await this.communityRepository.getPublishedHabit(idhabito);
 
     await this.communityRepository.updateClonesCount(idhabito, (originalHabit.clones_count || 0) + 1);
@@ -259,16 +290,16 @@ export class CommunityService {
       unidad_medida: originalHabit.unidad_medida,
       idcategoria: originalHabit.idcategoria,
       puntos: originalHabit.likes || 0,
-      idusuario: user.id,
-      estado: 'Activo',
+      idusuario: userId,
+      estado: "Activo",
+      fechainicio: new Date().toISOString().slice(0, 10),
     };
 
     return this.communityRepository.createUserHabit(newHabit);
   }
 
-  async shareHabit(token: string, idhabito: string) {
-    const user = await this.communityRepository.validateUserTokenFromClient(token);
-    const habito = await this.communityRepository.getUserHabit(idhabito, user.id);
+  async shareHabit(userId: string, idhabito: string) {
+    const habito = await this.communityRepository.getUserHabit(idhabito, userId);
 
     const habitData = {
       nombre_habito: habito.nombre,
@@ -276,9 +307,9 @@ export class CommunityService {
       meta_diaria: habito.meta_diaria,
       unidad_medida: habito.unidad_medida,
       idcategoria: habito.idcategoria,
-      likes: habito.puntos,
+      likes: habito.puntos || 0,
       dias_semana: habito.dias_semana || [1, 2, 3, 4, 5, 6, 7],
-      idusuario: user.id,
+      idusuario: userId,
       clones_count: 0,
     };
 

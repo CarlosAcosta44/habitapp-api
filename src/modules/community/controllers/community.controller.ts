@@ -10,11 +10,24 @@ export class ComunidadController {
   constructor(private readonly comunidadService: CommunityService) {}
 
   // ================= Foros =================
+  @Get('stats')
+  @ApiOperation({ summary: 'Obtener estadísticas de la comunidad' })
+  async getStats() {
+    return this.comunidadService.getStats();
+  }
+
   @Get('foros')
   @ApiOperation({ summary: 'Obtener todos los foros/temas' })
   async getForums(@Req() req: any) {
     const token = req.headers.authorization?.split(' ')[1];
     return this.comunidadService.getForums(token);
+  }
+
+  @Get('foros/:id')
+  @ApiOperation({ summary: 'Obtener un foro por ID' })
+  async getForumById(@Req() req: any, @Param('id') id: string) {
+    const token = req.headers.authorization?.split(' ')[1];
+    return this.comunidadService.getForumById(id, token);
   }
 
   @Get('foros/:id/comentarios')
