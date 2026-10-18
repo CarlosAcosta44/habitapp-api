@@ -63,9 +63,9 @@ export class ComunidadController {
     @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new UnauthorizedException('Token no encontrado');
-    return this.comunidadService.uploadImage(token, file);
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.uploadImage(userId, file);
   }
 
 
@@ -170,9 +170,9 @@ export class ComunidadController {
     @Req() req: any,
     @Param('id') retoId: string,
   ) {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new UnauthorizedException('Token no encontrado');
-    return this.comunidadService.joinReto(token, retoId);
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.joinReto(userId, retoId);
   }
 
   // ================= Especialistas =================
@@ -205,11 +205,13 @@ export class ComunidadController {
     @Req() req: any,
     @Param('id') idhabito: string,
   ) {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new UnauthorizedException('Token no encontrado');
-    return this.comunidadService.cloneHabit(token, idhabito);
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.cloneHabit(userId, idhabito);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('habitos/:id/compartir')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Compartir tu hábito con la comunidad' })
@@ -217,19 +219,21 @@ export class ComunidadController {
     @Req() req: any,
     @Param('id') idhabito: string,
   ) {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new UnauthorizedException('Token no encontrado');
-    return this.comunidadService.shareHabit(token, idhabito);
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.shareHabit(userId, idhabito);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Delete('habitos/:id')
   @ApiOperation({ summary: 'Eliminar un hábito compartido de la comunidad' })
   async deleteSharedHabit(
     @Req() req: any,
     @Param('id') idhabito: string,
   ) {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) throw new UnauthorizedException('Token no encontrado');
-    return this.comunidadService.deleteSharedHabit(token, idhabito);
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.deleteSharedHabit(userId, idhabito);
   }
 }

@@ -316,11 +316,10 @@ export class CommunityService {
     return this.communityRepository.publishHabit(habitData);
   }
 
-  async deleteSharedHabit(token: string, idhabito: string) {
-    const user = await this.communityRepository.validateUserTokenFromClient(token);
+  async deleteSharedHabit(userId: string, idhabito: string) {
     const original = await this.communityRepository.getPublishedHabitOwner(idhabito);
 
-    if (original.idusuario !== user.id) {
+    if (original.idusuario !== userId) {
       throw new UnauthorizedException('No tienes permiso para eliminar este hábito');
     }
 
