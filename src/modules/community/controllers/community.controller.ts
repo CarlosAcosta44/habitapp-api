@@ -157,8 +157,9 @@ export class ComunidadController {
   // ================= Retos =================
   @Get('retos')
   @ApiOperation({ summary: 'Obtener retos disponibles' })
-  async getRetos() {
-    return this.comunidadService.getRetos();
+  async getRetos(@Req() req: any) {
+    const token = req.headers?.authorization?.split(' ')[1];
+    return this.comunidadService.getRetos(token);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -173,6 +174,57 @@ export class ComunidadController {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException('No autenticado');
     return this.comunidadService.joinReto(userId, retoId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('retos/:id/salir')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Salir o abandonar un reto' })
+  async leaveReto(
+    @Req() req: any,
+    @Param('id') retoId: string,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.leaveReto(userId, retoId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('retos/:id/checkin')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Registrar avance diario o check-in en un reto' })
+  async checkinReto(
+    @Req() req: any,
+    @Param('id') retoId: string,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.checkinReto(userId, retoId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('retos')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear un nuevo reto en la comunidad' })
+  async createReto(
+    @Req() req: any,
+    @Body() dto: {
+      titulo: string;
+      descripcion: string;
+      puntosRecompensa?: number;
+      fechaInicio?: string;
+      fechaFin?: string;
+      insigniaRecompensa?: string;
+      icono?: string;
+      diasObjetivo?: number;
+    },
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException('No autenticado');
+    return this.comunidadService.createReto(userId, dto);
   }
 
   // ================= Especialistas =================

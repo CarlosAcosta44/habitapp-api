@@ -216,12 +216,36 @@ export class CommunityService {
 
   // ================= Retos =================
 
-  async getRetos() {
-    return this.communityRepository.getRetos();
+  async getRetos(accessToken?: string) {
+    const currentUserId = this.decodeJwtUserId(accessToken);
+    return this.communityRepository.getRetos(currentUserId || undefined);
   }
 
   async joinReto(userId: string, retoId: string) {
     return this.communityRepository.joinReto(userId, retoId);
+  }
+
+  async leaveReto(userId: string, retoId: string) {
+    return this.communityRepository.leaveReto(userId, retoId);
+  }
+
+  async checkinReto(userId: string, retoId: string) {
+    return this.communityRepository.checkinReto(userId, retoId);
+  }
+
+  async createReto(userId: string, dto: {
+    titulo: string;
+    descripcion: string;
+    puntosRecompensa?: number;
+    fechaInicio?: string;
+    fechaFin?: string;
+    insigniaRecompensa?: string;
+    icono?: string;
+    diasObjetivo?: number;
+  }) {
+    if (!dto.titulo?.trim()) throw new BadRequestException('El título del reto es obligatorio');
+    if (!dto.descripcion?.trim()) throw new BadRequestException('La descripción del reto es obligatoria');
+    return this.communityRepository.createReto(userId, dto);
   }
 
   // ================= Especialistas =================
@@ -300,6 +324,14 @@ export class CommunityService {
 
   async shareHabit(userId: string, idhabito: string) {
     const habito = await this.communityRepository.getUserHabit(idhabito, userId);
+
+    const alreadyShared = await this.communityRepository.getUserPublishedHabitByName(
+      userId,
+      habito.nombre,
+    );
+    if (alreadyShared) {
+      throw new BadRequestException('Este hábito ya ha sido compartido en la comunidad');
+    }
 
     const habitData = {
       nombre_habito: habito.nombre,

@@ -13,10 +13,14 @@ describe('CommunityService', () => {
       updateClonesCount: jest.fn(),
       createUserHabit: jest.fn(),
       getUserHabit: jest.fn(),
+      getUserPublishedHabitByName: jest.fn().mockResolvedValue(null),
       publishHabit: jest.fn(),
       getPublishedHabitOwner: jest.fn(),
       deletePublishedHabit: jest.fn(),
       joinReto: jest.fn(),
+      leaveReto: jest.fn(),
+      checkinReto: jest.fn(),
+      createReto: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -121,6 +125,42 @@ describe('CommunityService', () => {
       repository.getPublishedHabitOwner.mockResolvedValue({ idusuario: anotherUser } as any);
 
       await expect(service.deleteSharedHabit(userId, idhabito)).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('createReto', () => {
+    it('should create a reto successfully', async () => {
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const dto = { titulo: 'Reto 30 días', descripcion: 'Descripción del reto' };
+      repository.createReto.mockResolvedValue({ idreto: 'reto-1', ...dto } as any);
+
+      const result = await service.createReto(userId, dto);
+      expect(repository.createReto).toHaveBeenCalledWith(userId, dto);
+      expect(result).toHaveProperty('idreto', 'reto-1');
+    });
+  });
+
+  describe('leaveReto', () => {
+    it('should leave a reto successfully', async () => {
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const retoId = 'reto-1';
+      repository.leaveReto.mockResolvedValue({ success: true } as any);
+
+      const result = await service.leaveReto(userId, retoId);
+      expect(repository.leaveReto).toHaveBeenCalledWith(userId, retoId);
+      expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('checkinReto', () => {
+    it('should register checkin successfully', async () => {
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const retoId = 'reto-1';
+      repository.checkinReto.mockResolvedValue({ completed: false, progreso: 20 } as any);
+
+      const result = await service.checkinReto(userId, retoId);
+      expect(repository.checkinReto).toHaveBeenCalledWith(userId, retoId);
+      expect(result).toEqual({ completed: false, progreso: 20 });
     });
   });
 });
