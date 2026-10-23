@@ -14,3 +14,4 @@ Esta documentación está dividida en tres categorías principales para facilita
 ## 🛠️ 3. Guías de Desarrollo
 * [`guias/1-configuracion-local.md`](./guias/1-configuracion-local.md) - Instrucciones para correr el backend en tu máquina.
 * [`guias/2-despliegue.md`](./guias/2-despliegue.md) - Reglas para producción y migraciones en Supabase.
+* [`guias/3-pruebas-unitarias-y-calidad.md`](./guias/3-pruebas-unitarias-y-calidad.md) - Arquitectura de pruebas unitarias con Jest, suites activas y mocks de repositorios.
