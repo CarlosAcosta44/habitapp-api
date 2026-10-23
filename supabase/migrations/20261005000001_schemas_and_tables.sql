@@ -184,13 +184,12 @@ CREATE TABLE comunidad.retos (
     idreto uuid DEFAULT gen_random_uuid() NOT NULL,
     titulo character varying(100) NOT NULL,
     descripcion character varying(500) NOT NULL,
-    insignia_recompensa uuid,
-    puntos_recompensa integer DEFAULT 0,
+    puntos_recompensa integer DEFAULT 50 NOT NULL,
+    icono character varying(50) DEFAULT '🏆'::character varying NOT NULL,
     fechainicio date DEFAULT CURRENT_DATE NOT NULL,
     fechafin date,
     estado character varying(20) DEFAULT 'Activo'::character varying NOT NULL,
     idusuario_creador uuid,
-    imagen_url text,
     CONSTRAINT retos_estado_check CHECK (((estado)::text = ANY ((ARRAY['Borrador'::character varying, 'Activo'::character varying, 'Finalizado'::character varying])::text[])))
 );
 

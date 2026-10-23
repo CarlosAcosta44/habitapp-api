@@ -489,12 +489,6 @@ ALTER TABLE ONLY comunidad.retos
     ADD CONSTRAINT retos_idusuario_creador_fkey FOREIGN KEY (idusuario_creador) REFERENCES gestion.usuarios(idusuario);
 
 
---
--- Name: retos retos_insignia_recompensa_fkey; Type: FK CONSTRAINT; Schema: comunidad; Owner: postgres
---
-
-ALTER TABLE ONLY comunidad.retos
-    ADD CONSTRAINT retos_insignia_recompensa_fkey FOREIGN KEY (insignia_recompensa) REFERENCES gestion.logros(idlogro) ON DELETE SET NULL;
 
 
 --
