@@ -1,21 +1,17 @@
-// eslint.config.js for ESLint v9
-import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
-import path from 'path';
+import tseslint from 'typescript-eslint';
 
-const compat = new FlatCompat({
-  baseDirectory: path.resolve(import.meta.url, '../'),
-});
-
-export default [
+export default tseslint.config(
   js.configs.recommended,
-  ...compat.config({
-    parserOptions: { project: './tsconfig.json' },
-  }).map(config => ({
-    ...config,
+  ...tseslint.configs.recommended,
+  {
     rules: {
-      ...config.rules,
-      // Add any project specific overrides here
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
-  })),
-];
+  },
+  {
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '*.js'],
+  }
+);

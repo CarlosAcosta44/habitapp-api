@@ -85,7 +85,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
-      operationsSorter: 'alpha',
+      
     },
   });
 

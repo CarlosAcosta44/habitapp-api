@@ -2,8 +2,8 @@
 -- SCRIPT DE DATOS SINTÉTICOS MASIVOS (HabitApp) v4.1
 -- 
 -- REQUISITOS:
---   1. Haber ejecutado node scripts/recreate-synthetic-users-v4.mjs
---      para crear los 25 usuarios en auth.users con contraseñas válidas.
+-- Ninguno. Los 25 usuarios se crean automáticamente en gestion.usuarios con
+-- la contraseña por defecto: "password123"
 --
 -- ESTO GENERA: 
 --   Hábitos, registros (30 días), comunidad, entrenadores.
@@ -57,20 +57,34 @@ BEGIN
     DELETE FROM gestion.historial_puntos;
     DELETE FROM gestion.administradores;
 
-    -- ================================================
-    -- CONFIGURACIÓN DE ROLES Y DATOS EXTRA (Usuarios ya existen)
-    -- ================================================
     
-    -- Los usuarios ya existen en gestion.usuarios por el trigger en auth.users.
+    -- ================================================
+    -- CREACIÓN DE USUARIOS (Custom Auth)
+    -- ================================================
+    -- Insertamos 25 usuarios base con la contraseña "password123"
+    FOR i IN 1..25 LOOP
+        INSERT INTO gestion.usuarios (idusuario, nombre, apellido, email, password_hash, idrol)
+        VALUES (
+            gen_random_uuid(),
+            'Usuario' || i,
+            'Sintético',
+            'user' || i || '.habitapp@gmail.com',
+            '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
+            (SELECT idrol FROM gestion.roles WHERE nombrerol = 'Usuario')
+        );
+    END LOOP;
+
+    -- ================================================
+    -- CONFIGURACIÓN DE ROLES Y DATOS EXTRA
+    -- ================================================
     -- Vamos a asignar administradores (primeros 2) y entrenadores (3 al 7).
     
     -- Configurar Admins (primeros 2 por orden alfabético de email)
     INSERT INTO gestion.administradores (idadministrador, idusuario, estadoadmin)
     SELECT gen_random_uuid(), gu.idusuario, 'Activo'
     FROM gestion.usuarios gu
-    JOIN auth.users au ON gu.idusuario = au.id
-    WHERE au.email LIKE '%.habitapp@gmail.com'
-    ORDER BY au.email ASC LIMIT 2;
+    WHERE gu.email LIKE '%.habitapp@gmail.com'
+    ORDER BY gu.email ASC LIMIT 2;
 
     -- Entrenadores (usuarios 3 al 7)
     INSERT INTO seguimiento.entrenadores (identrenador, idusuario, especialidad, experiencia)
@@ -78,9 +92,8 @@ BEGIN
            (ARRAY['Fuerza', 'Yoga', 'Nutrición', 'Crossfit'])[((RANDOM()*3)+1)::INT],
            (RANDOM()*10+1)::INT
     FROM gestion.usuarios gu
-    JOIN auth.users au ON gu.idusuario = au.id
-    WHERE au.email LIKE '%.habitapp@gmail.com'
-    ORDER BY au.email ASC OFFSET 2 LIMIT 5;
+    WHERE gu.email LIKE '%.habitapp@gmail.com'
+    ORDER BY gu.email ASC OFFSET 2 LIMIT 5;
 
     -- Actualizar roles en gestion.usuarios
     UPDATE gestion.usuarios SET idrol = (SELECT idrol FROM gestion.roles WHERE nombrerol = 'Administrador')
@@ -94,7 +107,6 @@ BEGIN
     -- ================================================
     FOR v_user_id IN (
         SELECT gu.idusuario FROM gestion.usuarios gu
-        JOIN auth.users au ON gu.idusuario = au.id
         JOIN gestion.roles r ON r.idrol = gu.idrol
         WHERE r.nombrerol = 'Usuario' AND au.email LIKE '%.habitapp@gmail.com'
     ) LOOP
@@ -144,7 +156,6 @@ BEGIN
         FOR j IN 1..5 LOOP
             v_user_id := (
                 SELECT gu.idusuario FROM gestion.usuarios gu
-                JOIN auth.users au ON gu.idusuario = au.id
                 JOIN gestion.roles r ON r.idrol = gu.idrol
                 WHERE r.nombrerol = 'Usuario' AND au.email LIKE '%.habitapp@gmail.com'
                 ORDER BY RANDOM() LIMIT 1
@@ -172,8 +183,7 @@ BEGIN
         FOR j IN 1..5 LOOP
             v_user_id := (
                 SELECT gu.idusuario FROM gestion.usuarios gu
-                JOIN auth.users au ON gu.idusuario = au.id
-                WHERE au.email LIKE '%.habitapp@gmail.com' 
+                WHERE gu.email LIKE '%.habitapp@gmail.com' 
                 ORDER BY RANDOM() LIMIT 1
             );
             IF v_user_id IS NOT NULL THEN
@@ -190,15 +200,14 @@ BEGIN
     INSERT INTO gestion.notificaciones (mensaje, tipo, idusuario)
     SELECT '¡Tu perfil está listo! Explora tus nuevos hábitos.', 'Sistema', gu.idusuario
     FROM gestion.usuarios gu
-    JOIN auth.users au ON gu.idusuario = au.id
-    WHERE au.email LIKE '%.habitapp@gmail.com';
+    WHERE gu.email LIKE '%.habitapp@gmail.com';
 
     -- ================================================
     -- NUEVOS MÓDULOS DE UI (Logros, Retos, Amigos)
     -- ================================================
     
     -- Inyectar interacciones aleatorias en los nuevos Módulos para los usuarios sintéticos
-    FOR v_user_id IN (SELECT au.id FROM auth.users au WHERE au.email LIKE '%.habitapp@gmail.com') LOOP
+    FOR v_user_id IN (SELECT au.id FROM auth.users au WHERE gu.email LIKE '%.habitapp@gmail.com') LOOP
         
         -- 1. Asignar Logros Aleatorios
         INSERT INTO gestion.usuario_logro (idusuario, idlogro, fechaobtenido)
@@ -226,7 +235,7 @@ BEGIN
 
     -- 3. Crear Amistades Aleatorias (Red de Apoyo)
     -- Cada usuario recibe ~3 amigos de la lista sintética
-    FOR v_user_id IN (SELECT au.id FROM auth.users au WHERE au.email LIKE '%.habitapp@gmail.com') LOOP
+    FOR v_user_id IN (SELECT au.id FROM auth.users au WHERE gu.email LIKE '%.habitapp@gmail.com') LOOP
         INSERT INTO gestion.amigos (idusuario_solicitante, idusuario_receptor, estado)
         SELECT v_user_id, au2.id, 'Aceptado'
         FROM auth.users au2 
