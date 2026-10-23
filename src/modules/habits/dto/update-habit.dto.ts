@@ -71,4 +71,13 @@ export class UpdateHabitDto {
   @IsOptional()
   @IsString()
   unidadMedida?: string;
+
+  @ApiPropertyOptional({
+    description: 'Lista de horas de recordatorios (HH:MM)',
+    example: ['08:00', '20:00'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  recordatorios?: string[];
 }

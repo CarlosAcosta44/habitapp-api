@@ -23,6 +23,12 @@ interface RawHabito {
     descripcion: string | null;
     icono: string | null;
   } | null;
+  recordatorios?: Array<{
+    idrecordatorio: string;
+    hora: string;
+    mensaje: string;
+    activo: boolean;
+  }>;
 }
 
 @Injectable()
@@ -48,7 +54,8 @@ export class HabitsRepository {
   private readonly SELECT_WITH_CATEGORIA = `
     idhabito, nombre, descripcion, fechainicio, fechafin, estado,
     puntos, meta_diaria, unidad_medida, idusuario, idcategoria, dias_semana,
-    categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion, icono)
+    categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion, icono),
+    recordatorios(idrecordatorio, hora, mensaje, activo)
   `;
 
   mapToDomain(row: RawHabito) {
@@ -65,6 +72,12 @@ export class HabitsRepository {
       idUsuario: row.idusuario,
       idCategoria: row.idcategoria,
       diasSemana: row.dias_semana ?? [1, 2, 3, 4, 5, 6, 7],
+      recordatorios: (row.recordatorios || []).map((r: any) => ({
+        idRecordatorio: r.idrecordatorio,
+        hora: typeof r.hora === 'string' ? r.hora.slice(0, 5) : r.hora,
+        mensaje: r.mensaje,
+        activo: r.activo,
+      })),
       categoria: row.categorias_habitos
         ? {
             idCategoria: row.categorias_habitos.idcategoria,
@@ -122,7 +135,8 @@ export class HabitsRepository {
         idhabito, nombre, descripcion, fechainicio, fechafin, estado,
         puntos, meta_diaria, unidad_medida, idusuario, idcategoria, dias_semana,
         categorias_habitos!fk_habitos_categoria(idcategoria, nombre, descripcion, icono),
-        registro_habitos(idregistro, completado, progreso_actual, puntos_ganados, observacion, fecha)
+        registro_habitos(idregistro, completado, progreso_actual, puntos_ganados, observacion, fecha),
+        recordatorios(idrecordatorio, hora, mensaje, activo)
       `,
       )
       .eq('idusuario', userId)
@@ -304,16 +318,49 @@ export class HabitsRepository {
   }
 
   async delete(idHabito: string): Promise<void> {
-    // Soft-delete: actualizamos el estado a 'Inactivo' para preservar el historial de registros
+    // Soft-delete sagrado (Regla de Oro #2):
+    // Preservar registro_habitos y marcar el hábito como 'Inactivo' con fechafin = ayer
+    // para que NO aparezca hoy ni en fechas futuras, pero se mantenga intacto en el historial de días pasados.
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const ayerStr = `${y}-${m}-${day}`;
+
+    // Desactivar recordatorios asociados
+    await this.db.from('recordatorios').update({ activo: false }).eq('idhabito', idHabito);
+
     const { error } = await this.db
       .from('habitos')
-      .update({ estado: 'Inactivo' })
+      .update({
+        estado: 'Inactivo',
+        fechafin: ayerStr,
+      })
       .eq('idhabito', idHabito);
 
     if (error) {
       throw new InternalServerErrorException(
         `Error al eliminar hábito: ${error.message}`,
       );
+    }
+  }
+
+  async syncRecordatorios(idHabito: string, horas: string[]): Promise<void> {
+    await this.db.from('recordatorios').delete().eq('idhabito', idHabito);
+    if (horas && horas.length > 0) {
+      const records = horas
+        .filter((h) => Boolean(h && typeof h === 'string' && h.trim()))
+        .map((h) => ({
+          idhabito: idHabito,
+          hora: h.length === 5 ? `${h}:00` : h,
+          mensaje: '¡Es hora de cumplir tu hábito!',
+          frecuencia: 'Diario',
+          activo: true,
+        }));
+      if (records.length > 0) {
+        await this.db.from('recordatorios').insert(records);
+      }
     }
   }
 }

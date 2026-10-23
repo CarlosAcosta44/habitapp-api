@@ -66,11 +66,21 @@ export class CreateHabitDto {
   @IsUUID()
   idCategoria: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Días de la semana en los que aplica el hábito (1=Lunes, 7=Domingo)',
     example: [1, 2, 3, 4, 5, 6, 7],
   })
+  @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
-  diasSemana: number[];
+  diasSemana?: number[];
+
+  @ApiPropertyOptional({
+    description: 'Lista de horas de recordatorios (HH:MM)',
+    example: ['08:00', '20:00'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  recordatorios?: string[];
 }

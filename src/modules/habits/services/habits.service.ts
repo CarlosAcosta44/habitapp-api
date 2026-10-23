@@ -82,7 +82,7 @@ export class HabitsService {
     }
     // puntos 1-100 ya validado por class-validator en el DTO
 
-    return this.habitsRepo.create({
+    const created = await this.habitsRepo.create({
       nombre: dto.nombre,
       descripcion: dto.descripcion,
       fechainicio: fechaInicio,
@@ -95,6 +95,15 @@ export class HabitsService {
       idcategoria: dto.idCategoria,
       dias_semana: dto.diasSemana ?? [1, 2, 3, 4, 5, 6, 7],
     });
+
+    if (Array.isArray(dto.recordatorios) && dto.recordatorios.length > 0) {
+      const habitId = (created as any)?.idHabito || (created as any)?.idhabito;
+      if (habitId) {
+        await this.habitsRepo.syncRecordatorios(habitId, dto.recordatorios);
+      }
+    }
+
+    return created;
   }
 
   async update(idHabito: string, dto: UpdateHabitDto, userId: string) {
@@ -133,6 +142,10 @@ export class HabitsService {
     if (dto.metaDiaria !== undefined) dbUpdates.meta_diaria = dto.metaDiaria;
     if (dto.unidadMedida !== undefined) dbUpdates.unidad_medida = dto.unidadMedida;
 
+    if (dto.recordatorios !== undefined && Array.isArray(dto.recordatorios)) {
+      await this.habitsRepo.syncRecordatorios(idHabito, dto.recordatorios);
+    }
+
     return this.habitsRepo.update(idHabito, dbUpdates);
   }
 
@@ -146,8 +159,7 @@ export class HabitsService {
       throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
     if (habito.idUsuario !== userId)
       throw new ForbiddenException('Acceso denegado');
-    // Soft-delete para preservar los registros históricos en seguimiento.registro_habitos
-    await this.habitsRepo.update(idHabito, { estado: 'Inactivo' });
+    await this.habitsRepo.delete(idHabito);
     return { success: true };
   }
 }
