@@ -1,5 +1,5 @@
 
-import { Injectable, UnauthorizedException, Inject, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -53,10 +53,60 @@ export class AuthService {
     const isValid = await bcrypt.compare(dto.password, user.password_hash);
     if (!isValid) throw new UnauthorizedException('Credenciales inválidas');
 
-    const payload = { sub: user.idusuario, email: user.email, rol: user.idrol };
-    const access_token = this.jwtService.sign(payload);
+    if (user.estado_cuenta === 'Suspendido') {
+      throw new ForbiddenException('Tu cuenta se encuentra suspendida. Contacta al administrador.');
+    }
 
-    return { message: 'Inicio de sesión exitoso', access_token, user };
+    const payload = { sub: user.idusuario, email: user.email, rol: user.idrol };
+    const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshPayload = { sub: user.idusuario, email: user.email, token_type: 'refresh' };
+    const refresh_token = this.jwtService.sign(refreshPayload, { expiresIn: '7d' });
+
+    return {
+      message: 'Inicio de sesión exitoso',
+      access_token,
+      refresh_token,
+      expires_in: 900,
+      user,
+    };
+  }
+
+  async refreshToken(token?: string) {
+    if (!token) {
+      throw new UnauthorizedException('Refresh token expirado o inválido');
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      if (!payload || !payload.sub || payload.token_type !== 'refresh') {
+        throw new UnauthorizedException('Refresh token expirado o inválido');
+      }
+
+      const user = await this.userRepository.findById(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('Refresh token expirado o inválido');
+      }
+
+      if (user.estado_cuenta === 'Suspendido') {
+        throw new ForbiddenException('Tu cuenta se encuentra suspendida. Contacta al administrador.');
+      }
+
+      const accessPayload = { sub: user.idusuario, email: user.email, rol: user.idrol };
+      const access_token = this.jwtService.sign(accessPayload, { expiresIn: '15m' });
+      const refreshPayload = { sub: user.idusuario, email: user.email, token_type: 'refresh' };
+      const new_refresh_token = this.jwtService.sign(refreshPayload, { expiresIn: '7d' });
+
+      return {
+        message: 'Token renovado exitosamente',
+        access_token,
+        refresh_token: new_refresh_token,
+        expires_in: 900,
+        user,
+      };
+    } catch (error) {
+      if (error instanceof ForbiddenException) throw error;
+      throw new UnauthorizedException('Refresh token expirado o inválido');
+    }
   }
   
   async logout(userId: string) {
@@ -108,9 +158,17 @@ export class AuthService {
     }
 
     const payload = { sub: user.idusuario, email: user.email, rol: user.idrol };
-    const access_token = this.jwtService.sign(payload);
+    const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshPayload = { sub: user.idusuario, email: user.email, token_type: 'refresh' };
+    const refresh_token = this.jwtService.sign(refreshPayload, { expiresIn: '7d' });
 
-    return { message: 'Autenticación exitosa', access_token, user };
+    return {
+      message: 'Autenticación exitosa',
+      access_token,
+      refresh_token,
+      expires_in: 900,
+      user,
+    };
   }
 
   // --- PASSWORD RESET ---
