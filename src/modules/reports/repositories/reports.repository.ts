@@ -61,7 +61,7 @@ export class ReportsRepository {
       .getClient()
       .schema('seguimiento')
       .from('habitos')
-      .select('idhabito, nombre, descripcion, color')
+      .select('idhabito, nombre, descripcion, color, fechainicio, dias_semana')
       .eq('idusuario', userId)
       .eq('estado', 'Activo');
 
