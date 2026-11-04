@@ -45,7 +45,8 @@ export class RecordsController {
   }
 
   private getTzOffset(req: any): number {
-    return Number.parseInt(req.headers['x-timezone-offset'] as string, 10) || 0;
+    const rawHeader = req.headers['x-timezone-offset'];
+    return rawHeader ? Number.parseInt(rawHeader as string, 10) || 0 : 0;
   }
 
   @Get('racha/:habitoId')
