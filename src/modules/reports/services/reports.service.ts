@@ -198,16 +198,58 @@ export class ReportsService {
   }
   async getHabitsReport(userId: string) {
     try {
-      const habitos = await this.reportsRepository.getActiveHabitsInfo(userId);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
 
-      return habitos.map((h: any) => ({
-        idHabito: h.idhabito,
-        nombre: h.nombre,
-        porcentajeCambio: '+5%',
-        descripcion: h.descripcion || '',
-        progreso: 50,
-        color: h.color || 'bg-blue-500',
-      }));
+      const [habitos, records] = await Promise.all([
+        this.reportsRepository.getActiveHabitsInfo(userId),
+        this.reportsRepository.getHabitRecordsFromDate(userId, startDate),
+      ]);
+
+      const recordsByHabit: Record<string, number> = {};
+      if (records) {
+        for (const r of records) {
+          recordsByHabit[r.idhabito] = (recordsByHabit[r.idhabito] || 0) + 1;
+        }
+      }
+
+      const defaultColors = ['#2563EB', '#7C3AED', '#059669', '#EA580C', '#EC4899', '#0284C7'];
+
+      return (habitos || []).map((h: any, idx: number) => {
+        const completed = recordsByHabit[h.idhabito] || 0;
+        const habitStart = h.fechainicio ? new Date(h.fechainicio) : thirtyDaysAgo;
+        habitStart.setHours(0, 0, 0, 0);
+        const effectiveStart = habitStart > thirtyDaysAgo ? habitStart : thirtyDaysAgo;
+
+        let expected = 1;
+        if (h.dias_semana && Array.isArray(h.dias_semana) && h.dias_semana.length > 0) {
+          let count = 0;
+          const cur = new Date(effectiveStart);
+          while (cur <= today) {
+            const jsDay = cur.getDay();
+            const habDay = jsDay === 0 ? 7 : jsDay;
+            if (h.dias_semana.includes(habDay)) count++;
+            cur.setDate(cur.getDate() + 1);
+          }
+          expected = Math.max(1, count);
+        } else {
+          const daysDiff = Math.round((today.getTime() - effectiveStart.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+          expected = Math.max(1, daysDiff);
+        }
+
+        const progreso = Math.min(100, Math.round((completed / expected) * 100));
+
+        return {
+          idHabito: h.idhabito,
+          nombre: h.nombre,
+          porcentajeCambio: `${progreso}%`,
+          descripcion: h.descripcion || (h.meta_diaria ? `Meta: ${h.meta_diaria} al día` : 'Hábito activo'),
+          progreso,
+          color: h.color || defaultColors[idx % defaultColors.length],
+        };
+      });
     } catch (error: any) {
       throw new InternalServerErrorException(
         'Error al obtener reporte de hábitos: ' + error.message,

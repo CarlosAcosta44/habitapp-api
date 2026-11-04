@@ -26,8 +26,45 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     });
+    if (result.refresh_token) {
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      });
+    }
+    return result;
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Renovar access token JWT' })
+  @ApiResponse({ status: 200, description: 'Token renovado exitosamente.' })
+  @ApiResponse({ status: 401, description: 'Refresh token expirado o inválido.' })
+  async refresh(
+    @Req() req: any,
+    @Body('refreshToken') bodyToken?: string,
+    @Res({ passthrough: true }) res?: any,
+  ) {
+    const token = req.cookies?.refresh_token || bodyToken;
+    const result = await this.authService.refreshToken(token);
+    if (res) {
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 15, // 15 minutos
+      });
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
+      });
+    }
     return result;
   }
 
@@ -38,6 +75,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Cerrar sesión' })
   async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
     res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
     return this.authService.logout(req.user.userId);
   }
 
