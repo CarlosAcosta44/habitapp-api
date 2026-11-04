@@ -25,7 +25,6 @@ export class ReportsService {
     try {
       const today = new Date();
       today.setHours(0,0,0,0);
-      const todayStr = today.toISOString().split('T')[0];
 
       // 1. Obtener datos del perfil
       const userProfile = await this.reportsRepository.getUserProfile(userId);

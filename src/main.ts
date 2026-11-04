@@ -32,8 +32,42 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // CORS
+  const configuredOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+        'http://127.0.0.1:3000',
+        'https://habitapp.io',
+      ];
+
+  if (process.env.FRONTEND_URL && !configuredOrigins.includes(process.env.FRONTEND_URL)) {
+    configuredOrigins.push(process.env.FRONTEND_URL);
+  }
+
   app.enableCors({
-    origin: true, // Permite cualquier origen (útil para puertos aleatorios de Flutter Web)
+    origin: (
+      requestOrigin: string | undefined,
+      callback: (err: Error | null, origin?: boolean) => void,
+    ) => {
+      // Permitir peticiones sin origen (apps móviles nativas o herramientas locales)
+      if (!requestOrigin) {
+        callback(null, true);
+        return;
+      }
+
+      const isAllowedOrigin = configuredOrigins.includes(requestOrigin);
+      const isLocalDev =
+        process.env.NODE_ENV !== 'production' &&
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestOrigin);
+
+      if (isAllowedOrigin || isLocalDev) {
+        callback(null, true);
+      } else {
+        callback(new Error('Petición bloqueada por política CORS'));
+      }
+    },
     credentials: true,
   });
 

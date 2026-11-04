@@ -46,21 +46,21 @@ export class FriendsController {
   @Post(':id/accept')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Aceptar solicitud de amistad' })
-  acceptRequest(@Param('id', ParseUUIDPipe) friendId: string, @Req() req: any) {
+  acceptRequest(@Param('id', ParseUUIDPipe) _friendId: string, @Req() _req: any) {
     return { message: 'Solicitud aceptada (Stub)' };
   }
 
   @Post(':id/reject')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rechazar solicitud de amistad' })
-  rejectRequest(@Param('id', ParseUUIDPipe) friendId: string, @Req() req: any) {
+  rejectRequest(@Param('id', ParseUUIDPipe) _friendId: string, @Req() _req: any) {
     return { message: 'Solicitud rechazada (Stub)' };
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Eliminar un amigo' })
-  removeFriend(@Param('id', ParseUUIDPipe) friendId: string, @Req() req: any) {
+  removeFriend(@Param('id', ParseUUIDPipe) _friendId: string, @Req() _req: any) {
     return { message: 'Amigo eliminado (Stub)' };
   }
 }

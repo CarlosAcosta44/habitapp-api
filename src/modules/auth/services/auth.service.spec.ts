@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { MailService } from '../../../core/mail/services/mail.service';

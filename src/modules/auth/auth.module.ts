@@ -3,6 +3,7 @@ import { MailModule } from '../../core/mail/mail.module';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -15,10 +16,22 @@ import { UserRepository } from '../users/repositories/user.repository';
   imports: [
     MailModule,
     SupabaseModule,
+    ConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'super-secret-habitapp-key',
-      signOptions: { expiresIn: '7d' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const secret =
+          configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET no configurado en variables de entorno');
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: '7d' },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
@@ -27,7 +40,7 @@ import { UserRepository } from '../users/repositories/user.repository';
     JwtStrategy,
     JwtAuthGuard,
     RolesGuard,
-    { provide: 'IUserRepository', useClass: UserRepository }
+    { provide: 'IUserRepository', useClass: UserRepository },
   ],
   exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule],
 })

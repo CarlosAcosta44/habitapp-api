@@ -2,7 +2,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { SupabaseService } from '../../../core/supabase/services/supabase.service';
@@ -277,7 +276,7 @@ export class UsersRepository {
   async uploadAvatar(
     userId: string,
     file: Express.Multer.File,
-    token?: string,
+    _token?: string,
   ): Promise<{ url: string }> {
     const fileExt = file.originalname.split('.').pop() || 'png';
     const fileName = `${userId}_${Date.now()}.${fileExt}`;
