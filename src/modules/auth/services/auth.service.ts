@@ -109,7 +109,7 @@ export class AuthService {
     }
   }
   
-  async logout(userId: string) {
+  async logout(_userId: string) {
     return { message: 'Sesión terminada' };
   }
 
@@ -123,7 +123,7 @@ export class AuthService {
       const payload = ticket.getPayload();
       if (!payload || !payload.email) throw new UnauthorizedException('Token inválido');
       return this.handleOAuthLogin(payload.email, payload.given_name || '', payload.family_name || '');
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Token de Google inválido');
     }
   }
@@ -136,7 +136,7 @@ export class AuthService {
       );
       if (!data.email) throw new BadRequestException('La cuenta de Facebook no tiene un email público');
       return this.handleOAuthLogin(data.email, data.first_name, data.last_name);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Token de Facebook inválido');
     }
   }
@@ -205,7 +205,7 @@ export class AuthService {
       await this.userRepository.update(user.idusuario, { password_hash: hashedPassword });
 
       return { message: 'Contraseña actualizada exitosamente' };
-    } catch (e) {
+    } catch {
       throw new UnauthorizedException('El enlace expiró o es inválido');
     }
   }
