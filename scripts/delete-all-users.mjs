@@ -23,4 +23,4 @@ async function deleteAll() {
   }
   console.log('Done clearing auth.users!')
 }
-deleteAll()
+void deleteAll();

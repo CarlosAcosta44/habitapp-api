@@ -26,7 +26,7 @@ export class FriendsController {
   @ApiOperation({ summary: 'Obtener sugerencias de amigos' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   getSuggestions(@Req() req: any, @Query('limit') limit?: string) {
-    const parsedLimit = limit ? parseInt(limit, 10) : 12;
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : 12;
     return this.friendsService.getSuggestions(
       req.user.userId as string,
       parsedLimit,
