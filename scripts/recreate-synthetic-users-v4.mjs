@@ -15,7 +15,10 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
-const PASSWORD = 'HabitApp123!'
+const PASSWORD =
+  process.env.SYNTHETIC_USER_PASSWORD ||
+  process.env.TEST_USER_PASSWORD ||
+  `HabitApp_${Date.now()}!`;
 
 const USERS = [
   { email: 'admin.carlos.habitapp@gmail.com',  nombre: 'Carlos',    apellido: 'Mendoza',   genero: 'Masculino' },

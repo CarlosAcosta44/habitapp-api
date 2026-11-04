@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY . .
 
@@ -18,9 +18,11 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+RUN npm ci --only=production --ignore-scripts
 
-COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder --chown=node:node /usr/src/app/dist ./dist
+
+USER node
 
 EXPOSE 4000
 

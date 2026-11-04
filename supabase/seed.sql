@@ -61,7 +61,7 @@ BEGIN
     -- ================================================
     -- CREACIÓN DE USUARIOS (Custom Auth)
     -- ================================================
-    -- Insertamos 25 usuarios base con la contraseña "password123"
+    -- Insertamos 25 usuarios base para pruebas locales
     FOR i IN 1..25 LOOP
         INSERT INTO gestion.usuarios (idusuario, nombre, apellido, email, password_hash, idrol)
         VALUES (
@@ -69,7 +69,7 @@ BEGIN
             'Usuario' || i,
             'Sintético',
             'user' || i || '.habitapp@gmail.com',
-            '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
+            crypt('seed_pwd_' || i, gen_salt('bf', 4)),
             (SELECT idrol FROM gestion.roles WHERE nombrerol = 'Usuario')
         );
     END LOOP;
