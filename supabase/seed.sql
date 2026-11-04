@@ -28,34 +28,34 @@ BEGIN
     -- ================================================
 
     -- Comunidad
-    DELETE FROM comunidad.reacciones;
-    DELETE FROM comunidad.comentarios;
-    DELETE FROM comunidad.usuario_foro;
-    DELETE FROM comunidad.foro_administrador;
-    DELETE FROM comunidad.administrador_articulo;
-    DELETE FROM comunidad.foros;
-    DELETE FROM comunidad.articulos;
+    DELETE FROM comunidad.reacciones WHERE 1 = 1;
+    DELETE FROM comunidad.comentarios WHERE 1 = 1;
+    DELETE FROM comunidad.usuario_foro WHERE 1 = 1;
+    DELETE FROM comunidad.foro_administrador WHERE 1 = 1;
+    DELETE FROM comunidad.administrador_articulo WHERE 1 = 1;
+    DELETE FROM comunidad.foros WHERE 1 = 1;
+    DELETE FROM comunidad.articulos WHERE 1 = 1;
 
     -- Seguimiento
-    DELETE FROM seguimiento.recordatorios;
-    DELETE FROM seguimiento.registro_habitos;
-    DELETE FROM seguimiento.habitos;
-    DELETE FROM seguimiento.usuario_rutina;
-    DELETE FROM seguimiento.rutinas;
-    DELETE FROM seguimiento.seguimientos;
-    DELETE FROM seguimiento.usuario_entrenador;
-    DELETE FROM seguimiento.entrenadores;
-    DELETE FROM seguimiento.perfil_salud;
+    DELETE FROM seguimiento.recordatorios WHERE 1 = 1;
+    DELETE FROM seguimiento.registro_habitos WHERE 1 = 1;
+    DELETE FROM seguimiento.habitos WHERE 1 = 1;
+    DELETE FROM seguimiento.usuario_rutina WHERE 1 = 1;
+    DELETE FROM seguimiento.rutinas WHERE 1 = 1;
+    DELETE FROM seguimiento.seguimientos WHERE 1 = 1;
+    DELETE FROM seguimiento.usuario_entrenador WHERE 1 = 1;
+    DELETE FROM seguimiento.entrenadores WHERE 1 = 1;
+    DELETE FROM seguimiento.perfil_salud WHERE 1 = 1;
 
     -- Gestión
     -- Gestión y UI
-    DELETE FROM comunidad.usuario_tarea_progreso;
-    DELETE FROM comunidad.usuario_reto;
-    DELETE FROM gestion.usuario_logro;
-    DELETE FROM gestion.amigos;
-    DELETE FROM gestion.notificaciones;
-    DELETE FROM gestion.historial_puntos;
-    DELETE FROM gestion.administradores;
+    DELETE FROM comunidad.usuario_tarea_progreso WHERE 1 = 1;
+    DELETE FROM comunidad.usuario_reto WHERE 1 = 1;
+    DELETE FROM gestion.usuario_logro WHERE 1 = 1;
+    DELETE FROM gestion.amigos WHERE 1 = 1;
+    DELETE FROM gestion.notificaciones WHERE 1 = 1;
+    DELETE FROM gestion.historial_puntos WHERE 1 = 1;
+    DELETE FROM gestion.administradores WHERE 1 = 1;
 
     
     -- ================================================

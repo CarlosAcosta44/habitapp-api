@@ -18,7 +18,7 @@ export class RecordsRepository {
 
   private getLocalHoy(tzOffset?: number): string {
     const d = new Date();
-    if (typeof tzOffset === "number" && !isNaN(tzOffset) && tzOffset !== 0) {
+    if (typeof tzOffset === "number" && !Number.isNaN(tzOffset) && tzOffset !== 0) {
       const localTime = new Date(d.getTime() - tzOffset * 60000);
       return localTime.toISOString().split("T")[0];
     }

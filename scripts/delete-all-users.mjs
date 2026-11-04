@@ -23,4 +23,7 @@ async function deleteAll() {
   }
   console.log('Done clearing auth.users!')
 }
-deleteAll()
+deleteAll().catch((err) => {
+  console.error('Error running deleteAll:', err);
+  process.exit(1);
+});

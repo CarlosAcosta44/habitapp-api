@@ -155,7 +155,7 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit') limit?: string,
   ) {
-    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : 20;
     return this.usersService.getPointsHistory(user.userId, parsedLimit);
   }
 

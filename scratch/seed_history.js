@@ -82,4 +82,7 @@ async function createAndSeedMartin() {
   console.log(`¡Historial generado exitosamente!`);
   console.log(`Prueba con: martincitocuak2@gmail.com / password123`);
 }
-createAndSeedMartin();
+createAndSeedMartin().catch((err) => {
+  console.error("Error running createAndSeedMartin:", err);
+  process.exit(1);
+});
