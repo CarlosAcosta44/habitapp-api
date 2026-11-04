@@ -79,7 +79,4 @@ async function main() {
   console.log(`\n➡️  Ahora ejecuta el SQL "4. Script Datos Sinteticos Masivos.sql" en Supabase SQL Editor.`)
 }
 
-main().catch((err) => {
-  console.error('Error running synthetic users script:', err);
-  process.exit(1);
-});
+void main();
