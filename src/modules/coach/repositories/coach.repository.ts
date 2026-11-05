@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../../core/supabase/services/supabase.service';
 
 @Injectable()
@@ -166,6 +166,11 @@ export class CoachRepository {
       });
 
     if (error) {
+      if (error.code === '23505') {
+        throw new ConflictException(
+          'El cliente ya tiene asignada esta rutina actualmente.',
+        );
+      }
       throw new InternalServerErrorException(`Failed to assign routine to client: ${error.message}`);
     }
   }

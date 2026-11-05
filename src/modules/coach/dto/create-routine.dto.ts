@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsEnum,
   IsInt,
@@ -65,13 +66,13 @@ export class CreateRoutineDto {
   description?: string;
 
   @ApiProperty({
-    description: 'Hábitos incluidos en la rutina',
+    description: 'Hábitos incluidos en la rutina (mínimo 1)',
     type: [CreateRoutineHabitDto],
-    required: false,
+    required: true,
   })
   @IsArray()
+  @ArrayMinSize(1, { message: 'La rutina debe contener al menos un hábito.' })
   @ValidateNested({ each: true })
   @Type(() => CreateRoutineHabitDto)
-  @IsOptional()
-  habits?: CreateRoutineHabitDto[];
+  habits: CreateRoutineHabitDto[];
 }

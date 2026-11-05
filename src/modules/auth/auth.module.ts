@@ -23,7 +23,12 @@ import { UserRepository } from '../users/repositories/user.repository';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const secret =
-          configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+          configService.get<string>('JWT_SECRET') ||
+          configService.get<string>('JWT_ACCESS_SECRET') ||
+          configService.get<string>('SUPABASE_JWT_SECRET') ||
+          process.env.JWT_SECRET ||
+          process.env.JWT_ACCESS_SECRET ||
+          process.env.SUPABASE_JWT_SECRET;
         if (!secret) {
           throw new Error('JWT_SECRET no configurado en variables de entorno');
         }

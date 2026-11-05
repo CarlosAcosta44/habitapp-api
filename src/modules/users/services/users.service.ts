@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
+import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 import { UpdateUserProfileDto } from '../dto/user-profile.dto';
 import { UsersRepository } from '../repositories/users.repository';
 
@@ -11,11 +12,20 @@ export class UsersService {
     return this.usersRepository.getUserStats(userId);
   }
 
-  getProfile(userId: string, email?: string) {
-    return this.usersRepository.findProfileById(userId, email);
+  async getProfile(userId: string, email?: string) {
+    const profile = await this.usersRepository.findProfileById(userId, email);
+    if (profile.estado_cuenta === 'Suspendido') {
+      throw new ForbiddenException(
+        'Tu cuenta se encuentra suspendida. Contacta al administrador.',
+      );
+    }
+    return profile;
   }
 
-  listProfiles() {
+  listProfiles(page?: number, limit?: number) {
+    if (page !== undefined && limit !== undefined) {
+      return this.usersRepository.findAllProfilesPaginated(page, limit);
+    }
     return this.usersRepository.findAllProfiles();
   }
 
@@ -35,6 +45,20 @@ export class UsersService {
     }
 
     return this.usersRepository.updateRole(targetUserId, dto.nombrerol);
+  }
+
+  updateUserStatus(
+    actorId: string,
+    targetUserId: string,
+    dto: UpdateUserStatusDto,
+  ) {
+    if (actorId === targetUserId) {
+      throw new BadRequestException(
+        'No puedes cambiar el estado de tu propia cuenta',
+      );
+    }
+
+    return this.usersRepository.updateStatus(targetUserId, dto.estado);
   }
 
   uploadAvatar(userId: string, file: Express.Multer.File, token?: string) {

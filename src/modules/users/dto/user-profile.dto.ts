@@ -117,4 +117,11 @@ export class UserProfileDto {
     description: 'Nombre legible del rol: Usuario, Entrenador o Administrador.',
   })
   nombrerol: string;
+
+  @ApiPropertyOptional({
+    example: 'Activo',
+    description: 'Estado de la cuenta: Pendiente, Activo o Suspendido',
+  })
+  @IsOptional()
+  estado_cuenta?: string;
 }
