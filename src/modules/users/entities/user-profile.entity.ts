@@ -11,4 +11,5 @@ export interface UserProfileRow {
   idrol: string;
   nombrerol: string;
   puntosFaltantesTop1?: number;
+  estado_cuenta?: string;
 }

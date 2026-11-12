@@ -11,6 +11,7 @@ import { JwtAuthGuard } from '../../core/common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/common/guards/roles.guard';
 import { SupabaseModule } from '../../core/supabase/supabase.module';
 import { UserRepository } from '../users/repositories/user.repository';
+import { resolveJwtSecret } from './jwt-secret.helper';
 
 @Module({
   imports: [
@@ -21,17 +22,10 @@ import { UserRepository } from '../users/repositories/user.repository';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const secret =
-          configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
-        if (!secret) {
-          throw new Error('JWT_SECRET no configurado en variables de entorno');
-        }
-        return {
-          secret,
-          signOptions: { expiresIn: '7d' },
-        };
-      },
+      useFactory: (configService: ConfigService) => ({
+        secret: resolveJwtSecret(configService),
+        signOptions: { expiresIn: '7d' },
+      }),
     }),
   ],
   controllers: [AuthController],

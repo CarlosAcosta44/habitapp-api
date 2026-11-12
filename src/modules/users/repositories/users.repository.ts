@@ -154,18 +154,25 @@ export class UsersRepository {
     const puntosFaltantesTop1 = maxPuntos > data.puntostotales ? maxPuntos - data.puntostotales : 0;
 
     return {
-      idusuario: data.idusuario,
-      nombre: data.nombre,
-      apellido: data.apellido,
+      ...this.mapUserProfileRow(data),
       correo: email || '',
-      fotoperfil: data.fotoperfil,
-      telefono: data.telefono,
-      genero: data.genero,
-      fechanacimiento: data.fechanacimiento,
-      puntostotales: data.puntostotales,
-      idrol: data.idrol,
-      nombrerol: data.roles?.nombrerol || 'Usuario',
       puntosFaltantesTop1,
+    };
+  }
+
+  private mapUserProfileRow(u: any): UserProfileRow {
+    return {
+      idusuario: u.idusuario,
+      nombre: u.nombre,
+      apellido: u.apellido,
+      fotoperfil: u.fotoperfil,
+      telefono: u.telefono,
+      genero: u.genero,
+      fechanacimiento: u.fechanacimiento,
+      puntostotales: u.puntostotales,
+      idrol: u.idrol,
+      nombrerol: u.roles?.nombrerol || 'Usuario',
+      estado_cuenta: u.estado_cuenta || 'Activo',
     };
   }
 
@@ -184,18 +191,63 @@ export class UsersRepository {
       );
     }
 
-    return (data ?? []).map((u: any) => ({
-      idusuario: u.idusuario,
-      nombre: u.nombre,
-      apellido: u.apellido,
-      fotoperfil: u.fotoperfil,
-      telefono: u.telefono,
-      genero: u.genero,
-      fechanacimiento: u.fechanacimiento,
-      puntostotales: u.puntostotales,
-      idrol: u.idrol,
-      nombrerol: u.roles?.nombrerol || 'Usuario',
-    }));
+    return (data ?? []).map((u: any) => this.mapUserProfileRow(u));
+  }
+
+  async findAllProfilesPaginated(page: number, limit: number): Promise<{
+    data: UserProfileRow[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }> {
+    const fromIndex = (page - 1) * limit;
+    const toIndex = fromIndex + limit - 1;
+
+    const { data, count, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .select('*, roles(nombrerol)', { count: 'exact' })
+      .order('nombre', { ascending: true })
+      .range(fromIndex, toIndex);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `No se pudo listar usuarios paginados: ${error.message}`,
+      );
+    }
+
+    const total = count ?? 0;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const users = (data ?? []).map((u: any) => this.mapUserProfileRow(u));
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    };
+  }
+
+  async updateStatus(
+    userId: string,
+    estado: string,
+  ): Promise<UserProfileRow> {
+    const { error: updateError } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .update({ estado_cuenta: estado })
+      .eq('idusuario', userId);
+
+    if (updateError) {
+      throw new InternalServerErrorException(
+        `No se pudo actualizar el estado de cuenta: ${updateError.message}`,
+      );
+    }
+
+    return this.findProfileById(userId);
   }
 
   async updateProfile(
