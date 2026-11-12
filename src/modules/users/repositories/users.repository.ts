@@ -154,19 +154,25 @@ export class UsersRepository {
     const puntosFaltantesTop1 = maxPuntos > data.puntostotales ? maxPuntos - data.puntostotales : 0;
 
     return {
-      idusuario: data.idusuario,
-      nombre: data.nombre,
-      apellido: data.apellido,
+      ...this.mapUserProfileRow(data),
       correo: email || '',
-      fotoperfil: data.fotoperfil,
-      telefono: data.telefono,
-      genero: data.genero,
-      fechanacimiento: data.fechanacimiento,
-      puntostotales: data.puntostotales,
-      idrol: data.idrol,
-      nombrerol: data.roles?.nombrerol || 'Usuario',
       puntosFaltantesTop1,
-      estado_cuenta: data.estado_cuenta || 'Activo',
+    };
+  }
+
+  private mapUserProfileRow(u: any): UserProfileRow {
+    return {
+      idusuario: u.idusuario,
+      nombre: u.nombre,
+      apellido: u.apellido,
+      fotoperfil: u.fotoperfil,
+      telefono: u.telefono,
+      genero: u.genero,
+      fechanacimiento: u.fechanacimiento,
+      puntostotales: u.puntostotales,
+      idrol: u.idrol,
+      nombrerol: u.roles?.nombrerol || 'Usuario',
+      estado_cuenta: u.estado_cuenta || 'Activo',
     };
   }
 
@@ -185,19 +191,7 @@ export class UsersRepository {
       );
     }
 
-    return (data ?? []).map((u: any) => ({
-      idusuario: u.idusuario,
-      nombre: u.nombre,
-      apellido: u.apellido,
-      fotoperfil: u.fotoperfil,
-      telefono: u.telefono,
-      genero: u.genero,
-      fechanacimiento: u.fechanacimiento,
-      puntostotales: u.puntostotales,
-      idrol: u.idrol,
-      nombrerol: u.roles?.nombrerol || 'Usuario',
-      estado_cuenta: u.estado_cuenta || 'Activo',
-    }));
+    return (data ?? []).map((u: any) => this.mapUserProfileRow(u));
   }
 
   async findAllProfilesPaginated(page: number, limit: number): Promise<{
@@ -223,20 +217,7 @@ export class UsersRepository {
 
     const total = count ?? 0;
     const totalPages = Math.ceil(total / limit) || 1;
-
-    const users = (data ?? []).map((u: any) => ({
-      idusuario: u.idusuario,
-      nombre: u.nombre,
-      apellido: u.apellido,
-      fotoperfil: u.fotoperfil,
-      telefono: u.telefono,
-      genero: u.genero,
-      fechanacimiento: u.fechanacimiento,
-      puntostotales: u.puntostotales,
-      idrol: u.idrol,
-      nombrerol: u.roles?.nombrerol || 'Usuario',
-      estado_cuenta: u.estado_cuenta || 'Activo',
-    }));
+    const users = (data ?? []).map((u: any) => this.mapUserProfileRow(u));
 
     return {
       data: users,

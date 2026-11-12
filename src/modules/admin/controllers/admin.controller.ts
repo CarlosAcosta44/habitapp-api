@@ -1,4 +1,5 @@
 import {
+  applyDecorators,
   Body,
   Controller,
   Delete,
@@ -32,6 +33,24 @@ interface AuthenticatedUser {
   userId: string;
   email?: string;
   role: UserRole;
+}
+
+function AdminUserActionDocs(
+  summary: string,
+  description: string,
+  successDescription: string,
+  invalidStatus: number,
+  invalidDescription: string,
+) {
+  return applyDecorators(
+    ApiOperation({ summary, description }),
+    ApiParam({ name: 'id', description: 'UUID del usuario objetivo', type: String }),
+    ApiResponse({ status: 200, description: successDescription, type: UserProfileDto }),
+    ApiResponse({ status: 401, description: 'Token ausente o inválido.' }),
+    ApiResponse({ status: 403, description: 'Rol insuficiente. Se requiere administrador.' }),
+    ApiResponse({ status: invalidStatus, description: invalidDescription }),
+    ApiResponse({ status: 500, description: 'Error interno del servidor.' }),
+  );
 }
 
 @ApiTags('admin')
@@ -70,31 +89,13 @@ export class AdminController {
   }
 
   @Patch('users/:id/status')
-  @ApiOperation({
-    summary: 'Cambiar estado de cuenta de un usuario',
-    description:
-      'Solo accesible para administradores. Modifica el estado de cuenta (Pendiente, Activo, Suspendido).',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'UUID del usuario objetivo',
-    type: String,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Estado de cuenta actualizado.',
-    type: UserProfileDto,
-  })
-  @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
-  @ApiResponse({
-    status: 403,
-    description: 'Rol insuficiente. Se requiere administrador.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Datos de entrada inválidos o intento de auto-modificación.',
-  })
-  @ApiResponse({ status: 500, description: 'Error interno del servidor.' })
+  @AdminUserActionDocs(
+    'Cambiar estado de cuenta de un usuario',
+    'Solo accesible para administradores. Modifica el estado de cuenta (Pendiente, Activo, Suspendido).',
+    'Estado de cuenta actualizado.',
+    400,
+    'Datos de entrada inválidos o intento de auto-modificación.',
+  )
   updateUserStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) targetUserId: string,
@@ -104,31 +105,13 @@ export class AdminController {
   }
 
   @Patch('users/:id/role')
-  @ApiOperation({
-    summary: 'Cambiar rol de un usuario',
-    description:
-      'Solo accesible para administradores. Modifica el rol de otro usuario.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'UUID del usuario objetivo',
-    type: String,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Rol actualizado.',
-    type: UserProfileDto,
-  })
-  @ApiResponse({ status: 401, description: 'Token ausente o inválido.' })
-  @ApiResponse({
-    status: 403,
-    description: 'Rol insuficiente. Se requiere administrador.',
-  })
-  @ApiResponse({
-    status: 422,
-    description: 'Datos de entrada inválidos (validación).',
-  })
-  @ApiResponse({ status: 500, description: 'Error interno del servidor.' })
+  @AdminUserActionDocs(
+    'Cambiar rol de un usuario',
+    'Solo accesible para administradores. Modifica el rol de otro usuario.',
+    'Rol actualizado.',
+    422,
+    'Datos de entrada inválidos (validación).',
+  )
   updateUserRole(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) targetUserId: string,
