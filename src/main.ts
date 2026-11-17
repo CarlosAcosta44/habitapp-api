@@ -1,8 +1,8 @@
-import * as Sentry from '@sentry/nestjs';
-
 // Initialize Sentry only in production with a valid DSN
 const sentryDsn = process.env.SENTRY_DSN;
 if (process.env.NODE_ENV === 'production' && sentryDsn && !sentryDsn.includes('placeholder')) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Sentry = require('@sentry/nestjs');
   Sentry.init({
     dsn: sentryDsn,
     tracesSampleRate: 0.1,
