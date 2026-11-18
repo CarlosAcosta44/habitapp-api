@@ -177,6 +177,9 @@ export class ReportsService {
       return {
         userId,
         nombre: userProfile?.nombre,
+        apellido: userProfile?.apellido,
+        email: userProfile?.email,
+        fotoperfil: userProfile?.fotoperfil,
         puntos_totales: userProfile?.puntostotales || 0,
         cumplimiento_global: cumplimientoGlobal,
         total_esperado: totalEsperado,
@@ -187,6 +190,16 @@ export class ReportsService {
         oportunidad_mejora: oportunidadMejora,
         volumen_semanal: volumenSemanal,
         consistencia_mes: consistenciaMes,
+        recordsByDate,
+        activeHabits: (activeHabits || []).map((h: any) => ({
+          id: h.idhabito,
+          nombre: h.nombre,
+          descripcion: h.descripcion,
+          tipo: h.tipo || 'Personal',
+          meta: h.meta_diaria ? `${h.meta_diaria} / día` : 'Meta diaria',
+          completadoHoy: recordsByDate[today.toISOString().split('T')[0]]?.includes(h.idhabito) || false,
+          stats: statsByHabit[h.idhabito] || { completed: 0, expected: 0 },
+        })),
         insight: oportunidadMejora 
           ? `El hábito "${oportunidadMejora.nombre}" requiere más de tu atención. Intenta configurar recordatorios para mantener el impulso.` 
           : "¡Excelente trabajo! Estás manteniendo una consistencia increíble."

@@ -87,6 +87,12 @@ export class UserProfileDto {
   })
   fotoperfil: string | null;
 
+  @ApiPropertyOptional({ example: 'usuario@habitapp.io', description: 'Correo electrónico' })
+  correo?: string;
+
+  @ApiPropertyOptional({ example: 'usuario@habitapp.io', description: 'Correo electrónico' })
+  email?: string;
+
   @ApiPropertyOptional({ example: '+573001234567', description: 'Teléfono' })
   telefono?: string | null;
 

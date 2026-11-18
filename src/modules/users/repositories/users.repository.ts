@@ -155,7 +155,8 @@ export class UsersRepository {
 
     return {
       ...this.mapUserProfileRow(data),
-      correo: email || '',
+      correo: data.email || data.correo || email || '',
+      email: data.email || data.correo || email || '',
       puntosFaltantesTop1,
     };
   }
@@ -165,6 +166,8 @@ export class UsersRepository {
       idusuario: u.idusuario,
       nombre: u.nombre,
       apellido: u.apellido,
+      correo: u.email || u.correo || '',
+      email: u.email || u.correo || '',
       fotoperfil: u.fotoperfil,
       telefono: u.telefono,
       genero: u.genero,

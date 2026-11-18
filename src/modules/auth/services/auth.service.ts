@@ -7,6 +7,7 @@ import { OAuth2Client } from 'google-auth-library';
 import axios from 'axios';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { UserRole } from '../../users/dto/user-profile.dto';
 import type { IUserRepository } from '../../users/interfaces/user.repository.interface';
 import { MailService } from '../../../core/mail/services/mail.service';
 
@@ -57,7 +58,20 @@ export class AuthService {
       throw new ForbiddenException('Tu cuenta se encuentra suspendida. Contacta al administrador.');
     }
 
-    const payload = { sub: user.idusuario, email: user.email, rol: user.idrol };
+    const rawRole = (user.roles?.nombrerol || '').toString().toLowerCase();
+    const role = rawRole.includes('admin')
+      ? UserRole.ADMIN
+      : rawRole.includes('entrenador') || rawRole.includes('trainer')
+      ? UserRole.TRAINER
+      : UserRole.USER;
+
+    const payload = {
+      sub: user.idusuario,
+      email: user.email,
+      rol: user.idrol,
+      role,
+      nombrerol: user.roles?.nombrerol || 'Usuario',
+    };
     const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshPayload = { sub: user.idusuario, email: user.email, token_type: 'refresh' };
     const refresh_token = this.jwtService.sign(refreshPayload, { expiresIn: '7d' });
@@ -91,7 +105,20 @@ export class AuthService {
         throw new ForbiddenException('Tu cuenta se encuentra suspendida. Contacta al administrador.');
       }
 
-      const accessPayload = { sub: user.idusuario, email: user.email, rol: user.idrol };
+      const rawRole = (user.roles?.nombrerol || '').toString().toLowerCase();
+      const role = rawRole.includes('admin')
+        ? UserRole.ADMIN
+        : rawRole.includes('entrenador') || rawRole.includes('trainer')
+        ? UserRole.TRAINER
+        : UserRole.USER;
+
+      const accessPayload = {
+        sub: user.idusuario,
+        email: user.email,
+        rol: user.idrol,
+        role,
+        nombrerol: user.roles?.nombrerol || 'Usuario',
+      };
       const access_token = this.jwtService.sign(accessPayload, { expiresIn: '15m' });
       const refreshPayload = { sub: user.idusuario, email: user.email, token_type: 'refresh' };
       const new_refresh_token = this.jwtService.sign(refreshPayload, { expiresIn: '7d' });

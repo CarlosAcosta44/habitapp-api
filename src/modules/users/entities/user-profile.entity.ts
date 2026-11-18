@@ -3,6 +3,7 @@ export interface UserProfileRow {
   nombre: string;
   apellido: string;
   correo?: string;
+  email?: string;
   fotoperfil: string | null;
   telefono?: string | null;
   genero?: string | null;

@@ -27,11 +27,17 @@ export class CoachService {
           assigned_at: item.fechainicio,
           client: profile
             ? {
+                id: profile.idusuario,
                 idusuario: profile.idusuario,
                 nombre: profile.nombre,
                 apellido: profile.apellido,
+                full_name: `${profile.nombre || ''} ${profile.apellido || ''}`.trim(),
+                email: profile.email || '',
+                correo: profile.email || '',
                 fotoperfil: profile.fotoperfil,
-                puntostotales: profile.puntostotales,
+                avatar_url: profile.fotoperfil,
+                puntostotales: profile.puntostotales || 0,
+                total_points: profile.puntostotales || 0,
                 idrol: profile.idrol,
                 nombrerol: profile?.roles?.nombrerol || 'Usuario',
               }
@@ -145,5 +151,20 @@ export class CoachService {
     await this.coachRepository.getClientTrainerRelationship(trainerId, clientId);
 
     return this.reportsService.getUserSummary(clientId);
+  }
+
+  async sendRecommendation(
+    userId: string,
+    clientId: string,
+    dto: { message: string; type?: string },
+  ) {
+    const trainerId = await this.getTrainerId(userId);
+    await this.coachRepository.getClientTrainerRelationship(trainerId, clientId);
+
+    return this.coachRepository.createRecommendation(
+      clientId,
+      dto.message,
+      dto.type || 'Recomendación',
+    );
   }
 }

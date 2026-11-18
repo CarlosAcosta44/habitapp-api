@@ -169,4 +169,16 @@ export class CoachController {
   ) {
     return this.coachService.getClientProgress(user.userId, clientId);
   }
+
+  @Post('clients/:clientId/recommendation')
+  @ApiOperation({ summary: 'Enviar recomendación o notificación a un cliente' })
+  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente' })
+  @ApiResponse({ status: 201, description: 'Recomendación enviada exitosamente.' })
+  async sendRecommendation(
+    @CurrentUser() user: any,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+    @Body() dto: { message: string; type?: string },
+  ) {
+    return this.coachService.sendRecommendation(user.userId, clientId, dto);
+  }
 }

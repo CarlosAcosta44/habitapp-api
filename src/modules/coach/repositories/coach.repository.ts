@@ -6,18 +6,35 @@ export class CoachRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getTrainerId(userId: string): Promise<string> {
-    const { data, error } = await this.supabaseService
+    const { data } = await this.supabaseService
       .getClient()
       .schema('seguimiento')
       .from('entrenadores')
       .select('identrenador')
       .eq('idusuario', userId)
+      .maybeSingle();
+
+    if (data?.identrenador) {
+      return data.identrenador;
+    }
+
+    const { data: newTrainer } = await this.supabaseService
+      .getClient()
+      .schema('seguimiento')
+      .from('entrenadores')
+      .insert({
+        idusuario: userId,
+        especialidad: 'Bienestar y Hábitos',
+        experiencia: 3,
+      })
+      .select('identrenador')
       .single();
 
-    if (error || !data) {
-      throw new NotFoundException('Perfil de entrenador no encontrado para este usuario');
+    if (newTrainer?.identrenador) {
+      return newTrainer.identrenador;
     }
-    return data.identrenador;
+
+    throw new NotFoundException('Perfil de entrenador no encontrado para este usuario');
   }
 
   async getClientsByTrainer(trainerId: string) {
@@ -173,5 +190,25 @@ export class CoachRepository {
       }
       throw new InternalServerErrorException(`Failed to assign routine to client: ${error.message}`);
     }
+  }
+
+  async createRecommendation(clientId: string, message: string, type: string = 'Recomendación') {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('notificaciones')
+      .insert({
+        idusuario: clientId,
+        mensaje: message,
+        tipo: type,
+        leida: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new InternalServerErrorException(`Failed to send recommendation: ${error.message}`);
+    }
+    return data;
   }
 }
