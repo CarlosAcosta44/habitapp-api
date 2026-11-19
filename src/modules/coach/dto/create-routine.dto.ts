@@ -65,14 +65,31 @@ export class CreateRoutineDto {
   @IsOptional()
   description?: string;
 
+  @ApiProperty({ description: 'Categoría o tipo de la rutina', required: false })
+  @IsString()
+  @IsOptional()
+  tipo?: string;
+
+  @ApiProperty({ description: 'Nivel de la rutina (Principiante, Intermedio, Avanzado)', required: false })
+  @IsString()
+  @IsOptional()
+  nivel?: string;
+
+  @ApiProperty({ description: 'Duración estimada en días', required: false })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  duracion?: number;
+
   @ApiProperty({
     description: 'Hábitos incluidos en la rutina (mínimo 1)',
     type: [CreateRoutineHabitDto],
-    required: true,
+    required: false,
   })
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(1, { message: 'La rutina debe contener al menos un hábito.' })
   @ValidateNested({ each: true })
   @Type(() => CreateRoutineHabitDto)
-  habits: CreateRoutineHabitDto[];
+  habits?: CreateRoutineHabitDto[];
 }

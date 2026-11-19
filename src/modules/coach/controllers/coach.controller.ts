@@ -181,4 +181,44 @@ export class CoachController {
   ) {
     return this.coachService.sendRecommendation(user.userId, clientId, dto);
   }
+
+  @Get('available-clients')
+  @ApiOperation({ summary: 'Obtener usuarios del sistema disponibles para vincular' })
+  @ApiResponse({ status: 200, description: 'Lista de usuarios disponibles.' })
+  async getAvailableClients(@CurrentUser() user: any) {
+    return this.coachService.getAvailableClients(user.userId);
+  }
+
+  @Post('clients/:clientId/link')
+  @ApiOperation({ summary: 'Vincular un cliente al entrenador' })
+  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente' })
+  @ApiResponse({ status: 201, description: 'Cliente vinculado exitosamente.' })
+  async linkClient(
+    @CurrentUser() user: any,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+  ) {
+    return this.coachService.linkClient(user.userId, clientId);
+  }
+
+  @Delete('clients/:clientId/link')
+  @ApiOperation({ summary: 'Desvincular un cliente del entrenador' })
+  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente' })
+  @ApiResponse({ status: 200, description: 'Cliente desvinculado exitosamente.' })
+  async unlinkClient(
+    @CurrentUser() user: any,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+  ) {
+    return this.coachService.unlinkClient(user.userId, clientId);
+  }
+
+  @Get('clients/:clientId/recommendations')
+  @ApiOperation({ summary: 'Obtener historial de recomendaciones enviadas a un cliente' })
+  @ApiParam({ name: 'clientId', type: String, description: 'UUID del cliente' })
+  @ApiResponse({ status: 200, description: 'Historial de recomendaciones.' })
+  async getClientRecommendations(
+    @CurrentUser() user: any,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+  ) {
+    return this.coachService.getClientRecommendations(user.userId, clientId);
+  }
 }

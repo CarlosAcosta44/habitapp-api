@@ -184,8 +184,21 @@ export class AuthService {
       });
     }
 
-    const payload = { sub: user.idusuario, email: user.email, rol: user.idrol };
-    const access_token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const rawRole = (user.roles?.nombrerol || '').toString().toLowerCase();
+    const role = rawRole.includes('admin')
+      ? UserRole.ADMIN
+      : rawRole.includes('entrenador') || rawRole.includes('trainer')
+      ? UserRole.TRAINER
+      : UserRole.USER;
+
+    const payload = {
+      sub: user.idusuario,
+      email: user.email,
+      rol: user.idrol,
+      role,
+      nombrerol: user.roles?.nombrerol || 'Usuario',
+    };
+    const access_token = this.jwtService.sign(payload, { expiresIn: '7d' });
     const refreshPayload = { sub: user.idusuario, email: user.email, token_type: 'refresh' };
     const refresh_token = this.jwtService.sign(refreshPayload, { expiresIn: '7d' });
 
@@ -193,7 +206,7 @@ export class AuthService {
       message: 'Autenticación exitosa',
       access_token,
       refresh_token,
-      expires_in: 900,
+      expires_in: 604800,
       user,
     };
   }

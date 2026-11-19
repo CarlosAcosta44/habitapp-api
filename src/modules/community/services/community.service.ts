@@ -259,7 +259,13 @@ export class CommunityService {
       const entrenadoresData = await this.communityRepository.getCoachSpecialties(ids);
       return users.map((u: any) => {
         const e = entrenadoresData.find((ed: any) => ed.idusuario === u.idusuario);
-        return { ...u, especialidad: e?.especialidad || 'Especialista en Hábitos' };
+        return {
+          ...u,
+          identrenador: e?.identrenador || null,
+          especialidad: e?.especialidad || 'Especialista en Hábitos',
+          experiencia: e?.experiencia ?? 3,
+          certificacion: e?.certificacion || 'Coach Certificado HabitApp',
+        };
       });
     }
 

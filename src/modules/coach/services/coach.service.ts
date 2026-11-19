@@ -21,7 +21,13 @@ export class CoachService {
 
     const clientsWithProfiles = await Promise.all(
       data.map(async (item: any) => {
-        const profile = await this.coachRepository.getUserProfile(item.idusuario);
+        const [profile, summary] = await Promise.all([
+          this.coachRepository.getUserProfile(item.idusuario),
+          this.reportsService.getUserSummary(item.idusuario).catch(() => null),
+        ]);
+
+        const activeHabits = summary?.activeHabits || [];
+        const completedToday = activeHabits.filter((h: any) => h.completadoHoy).length;
 
         return {
           assigned_at: item.fechainicio,
@@ -40,6 +46,11 @@ export class CoachService {
                 total_points: profile.puntostotales || 0,
                 idrol: profile.idrol,
                 nombrerol: profile?.roles?.nombrerol || 'Usuario',
+                racha_actual: summary?.racha_actual || 0,
+                racha_maxima: summary?.racha_maxima || 0,
+                cumplimiento: summary?.cumplimiento_global || 0,
+                completados_hoy: completedToday,
+                total_habitos: activeHabits.length,
               }
             : null,
         };
@@ -49,20 +60,68 @@ export class CoachService {
     return clientsWithProfiles;
   }
 
+  private encodeRoutineDescription(
+    description?: string,
+    habits?: Array<{ habit_name: string }>,
+  ): string {
+    const cleanDesc = (description || '').split('||HABITS:')[0].trim();
+    const validHabits = (habits || [])
+      .map((h) => (h.habit_name || '').trim())
+      .filter(Boolean);
+
+    if (validHabits.length === 0) {
+      return cleanDesc.slice(0, 500);
+    }
+
+    const encodedHabits = `||HABITS:${validHabits.join(';')}`;
+    const maxDescLen = Math.max(0, 500 - encodedHabits.length - 1);
+    return `${cleanDesc.slice(0, maxDescLen)} ${encodedHabits}`.trim();
+  }
+
+  private parseRoutineRow(r: any) {
+    const rawDesc = r.descripcion || '';
+    const [cleanDesc, habitsPart] = rawDesc.split('||HABITS:');
+    const habitNames = habitsPart
+      ? habitsPart
+          .split(';')
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+
+    const routineHabits =
+      habitNames.length > 0
+        ? habitNames.map((name: string, idx: number) => ({
+            habit_name: name,
+            order_index: idx,
+          }))
+        : [{ habit_name: r.objetivo || 'Hábito principal', order_index: 0 }];
+
+    return {
+      ...r,
+      id: r.idrutina,
+      name: r.objetivo,
+      description: cleanDesc.trim(),
+      tipo: r.tipo || 'Bienestar',
+      nivel: r.nivel || 'Principiante',
+      duracion: r.duracion ?? 21,
+      routine_habits: routineHabits,
+    };
+  }
+
   async createRoutine(userId: string, dto: CreateRoutineDto) {
     const trainerId = await this.getTrainerId(userId);
+    const encodedDesc = this.encodeRoutineDescription(dto.description, dto.habits);
 
     const routine = await this.coachRepository.createRoutine(
-      trainerId, 
-      dto.description || '', 
-      dto.name
+      trainerId,
+      encodedDesc,
+      dto.name,
+      {
+        tipo: dto.tipo,
+        nivel: dto.nivel,
+        duracion: dto.duracion,
+      },
     );
-
-    if (dto.habits && dto.habits.length > 0) {
-      console.warn(
-        'Asignación detallada de hábitos pausada por falta de tabla rutina_habitos',
-      );
-    }
 
     return this.getRoutineById(userId, routine.idrutina);
   }
@@ -71,26 +130,14 @@ export class CoachService {
     const trainerId = await this.getTrainerId(userId);
     const data = await this.coachRepository.getRoutinesByTrainer(trainerId);
 
-    return data.map((r: any) => ({
-      ...r,
-      name: r.objetivo,
-      description: r.descripcion,
-      id: r.idrutina,
-      routine_habits: [],
-    }));
+    return data.map((r: any) => this.parseRoutineRow(r));
   }
 
   async getRoutineById(userId: string, routineId: string) {
     const trainerId = await this.getTrainerId(userId);
     const data = await this.coachRepository.getRoutineByIdAndTrainer(routineId, trainerId);
 
-    return {
-      ...data,
-      name: data.objetivo,
-      description: data.descripcion,
-      id: data.idrutina,
-      routine_habits: [],
-    };
+    return this.parseRoutineRow(data);
   }
 
   async updateRoutine(
@@ -99,20 +146,22 @@ export class CoachService {
     dto: UpdateRoutineDto,
   ) {
     const trainerId = await this.getTrainerId(userId);
-    await this.getRoutineById(userId, routineId);
+    const current = await this.getRoutineById(userId, routineId);
 
     const updateData: any = {};
-    if (dto.name !== undefined) updateData.objetivo = dto.name;
-    if (dto.description !== undefined) updateData.descripcion = dto.description;
+    if (dto.name !== undefined) updateData.objetivo = dto.name.slice(0, 200);
+    if (dto.tipo !== undefined) updateData.tipo = dto.tipo.slice(0, 30);
+    if (dto.nivel !== undefined) updateData.nivel = dto.nivel.slice(0, 20);
+    if (dto.duracion !== undefined) updateData.duracion = dto.duracion;
+    if (dto.description !== undefined || dto.habits !== undefined) {
+      updateData.descripcion = this.encodeRoutineDescription(
+        dto.description !== undefined ? dto.description : current.description,
+        dto.habits !== undefined ? dto.habits : current.routine_habits,
+      );
+    }
 
     if (Object.keys(updateData).length > 0) {
       await this.coachRepository.updateRoutine(routineId, trainerId, updateData);
-    }
-
-    if (dto.habits) {
-      console.warn(
-        'Actualización de hábitos pausada por falta de tabla rutina_habitos',
-      );
     }
 
     return this.getRoutineById(userId, routineId);
@@ -137,12 +186,30 @@ export class CoachService {
     const trainerId = await this.getTrainerId(userId);
 
     await this.coachRepository.getClientTrainerRelationship(trainerId, clientId);
-    await this.getRoutineById(userId, routineId);
+    const routine = await this.getRoutineById(userId, routineId);
     await this.coachRepository.assignRoutineToClient(clientId, routineId);
+
+    // Materializar los hábitos de la rutina directamente en el perfil del cliente
+    const habitsAssigned =
+      (await this.coachRepository.materializeRoutineHabitsForClient?.(
+        clientId,
+        routine,
+      )) ?? 0;
+
+    // Notificar al alumno en su bandeja de notificaciones
+    if (this.coachRepository.createRecommendation) {
+      await this.coachRepository
+        .createRecommendation(
+          clientId,
+          `[Rutina Asignada] Tu entrenador te ha asignado el protocolo "${routine.name}" (${routine.tipo} • Nivel ${routine.nivel}). Se han activado los hábitos en tu panel diario.`,
+          'Recomendación',
+        )
+        .catch(() => null);
+    }
 
     return {
       message: 'Routine assigned successfully to client',
-      habitsAssigned: 0,
+      habitsAssigned,
     };
   }
 
@@ -166,5 +233,26 @@ export class CoachService {
       dto.message,
       dto.type || 'Recomendación',
     );
+  }
+
+  async linkClient(userId: string, clientId: string) {
+    const trainerId = await this.getTrainerId(userId);
+    return this.coachRepository.linkClient(trainerId, clientId);
+  }
+
+  async unlinkClient(userId: string, clientId: string) {
+    const trainerId = await this.getTrainerId(userId);
+    return this.coachRepository.unlinkClient(trainerId, clientId);
+  }
+
+  async getAvailableClients(userId: string) {
+    const trainerId = await this.getTrainerId(userId);
+    return this.coachRepository.getAvailableClients(trainerId, userId);
+  }
+
+  async getClientRecommendations(userId: string, clientId: string) {
+    const trainerId = await this.getTrainerId(userId);
+    await this.coachRepository.getClientTrainerRelationship(trainerId, clientId);
+    return this.coachRepository.getClientRecommendations(clientId);
   }
 }

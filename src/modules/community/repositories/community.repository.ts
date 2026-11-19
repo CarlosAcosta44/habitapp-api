@@ -828,7 +828,7 @@ export class CommunityRepository {
     const { data } = await this.client
       .schema('seguimiento')
       .from('entrenadores')
-      .select('idusuario, especialidad')
+      .select('identrenador, idusuario, especialidad, experiencia, certificacion')
       .in('idusuario', userIds);
     return data || [];
   }
@@ -1002,24 +1002,7 @@ export class CommunityRepository {
       .select('*', { count: 'exact', head: true })
       .eq('estado', 'Activo');
 
-    if (error) return 30;
-    return count ?? 30;
-  }
-
-  async validateUserToken(accessToken: string) {
-    const { data: userData, error: userError } = await this.supabaseService.getClient().auth.getUser(accessToken);
-    if (userError || !userData.user) throw new UnauthorizedException('No autenticado');
-    return userData.user;
-  }
-
-  async validateUserTokenFromClient(accessToken: string) {
-    const { createClient } = require('@supabase/supabase-js');
-    const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const userClient = createClient(process.env.SUPABASE_URL, anonKey, {
-      global: { headers: { Authorization: `Bearer ${accessToken}` }, fetch: require('node-fetch') },
-    });
-    const { data: userData, error: userError } = await userClient.auth.getUser();
-    if (userError || !userData?.user) throw new UnauthorizedException('Token inválido');
-    return userData.user;
+    if (error) return 0;
+    return count ?? 0;
   }
 }

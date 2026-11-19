@@ -63,17 +63,23 @@ export class CoachRepository {
     return data;
   }
 
-  async createRoutine(trainerId: string, description: string, name: string) {
+  async createRoutine(
+    trainerId: string,
+    description: string,
+    name: string,
+    options?: { tipo?: string; nivel?: string; duracion?: number },
+  ) {
     const { data, error } = await this.supabaseService
       .getClient()
       .schema('seguimiento')
       .from('rutinas')
       .insert({
         identrenador: trainerId,
-        tipo: 'General',
-        descripcion: description,
-        nivel: 'Principiante',
-        objetivo: name,
+        tipo: (options?.tipo || 'Bienestar').slice(0, 30),
+        descripcion: (description || '').slice(0, 500),
+        nivel: (options?.nivel || 'Principiante').slice(0, 20),
+        duracion: options?.duracion ?? 21,
+        objetivo: name.slice(0, 200),
       })
       .select()
       .single();
@@ -192,6 +198,95 @@ export class CoachRepository {
     }
   }
 
+  async materializeRoutineHabitsForClient(
+    clientId: string,
+    routine: {
+      name: string;
+      description?: string;
+      tipo?: string;
+      duracion?: number;
+      routine_habits?: Array<{ habit_name: string }>;
+    },
+  ): Promise<number> {
+    const client = this.supabaseService.getClient();
+
+    // 1. Resolver idcategoria de seguimiento.categorias_habitos según routine.tipo
+    const { data: categories } = await client
+      .schema('seguimiento')
+      .from('categorias_habitos')
+      .select('idcategoria, nombre');
+
+    const catList = categories || [];
+    const targetTipo = (routine.tipo || '').toLowerCase();
+    const matchedCat =
+      catList.find((c: any) => (c.nombre || '').toLowerCase().includes(targetTipo)) ||
+      catList.find((c: any) => targetTipo.includes((c.nombre || '').toLowerCase())) ||
+      catList[0];
+
+    const categoryId = matchedCat?.idcategoria;
+    if (!categoryId) return 0;
+
+    // 2. Obtener hábitos activos actuales del cliente para no duplicar nombres idénticos
+    const { data: existingHabits } = await client
+      .schema('seguimiento')
+      .from('habitos')
+      .select('nombre')
+      .eq('idusuario', clientId)
+      .eq('estado', 'Activo');
+
+    const existingNames = new Set(
+      (existingHabits || []).map((h: any) => (h.nombre || '').trim().toLowerCase()),
+    );
+
+    const habitsToCreate =
+      routine.routine_habits && routine.routine_habits.length > 0
+        ? routine.routine_habits
+        : [{ habit_name: routine.name }];
+
+    const today = new Date();
+    const fechaInicio = today.toISOString().split('T')[0];
+    let fechaFin: string | null = null;
+    if (routine.duracion && routine.duracion > 0) {
+      const end = new Date(today);
+      end.setDate(today.getDate() + routine.duracion);
+      fechaFin = end.toISOString().split('T')[0];
+    }
+
+    let createdCount = 0;
+    for (const h of habitsToCreate) {
+      const cleanName = (h.habit_name || routine.name || 'Hábito de Rutina').trim().slice(0, 45);
+      if (!cleanName || existingNames.has(cleanName.toLowerCase())) {
+        continue;
+      }
+
+      const cleanDesc = `[Coach: ${routine.name}] ${routine.description || 'Protocolo asignado por tu entrenador'}`.slice(0, 200);
+
+      const { error } = await client
+        .schema('seguimiento')
+        .from('habitos')
+        .insert({
+          nombre: cleanName,
+          descripcion: cleanDesc,
+          fechainicio: fechaInicio,
+          fechafin: fechaFin,
+          estado: 'Activo',
+          puntos: 15,
+          idusuario: clientId,
+          idcategoria: categoryId,
+          meta_diaria: 1,
+          unidad_medida: 'veces',
+          dias_semana: [1, 2, 3, 4, 5, 6, 7],
+        });
+
+      if (!error) {
+        createdCount++;
+        existingNames.add(cleanName.toLowerCase());
+      }
+    }
+
+    return createdCount;
+  }
+
   async createRecommendation(clientId: string, message: string, type: string = 'Recomendación') {
     const { data, error } = await this.supabaseService
       .getClient()
@@ -210,5 +305,113 @@ export class CoachRepository {
       throw new InternalServerErrorException(`Failed to send recommendation: ${error.message}`);
     }
     return data;
+  }
+
+  async linkClient(trainerId: string, clientId: string) {
+    const { data: existing } = await this.supabaseService
+      .getClient()
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('identrenador')
+      .eq('identrenador', trainerId)
+      .eq('idusuario', clientId)
+      .maybeSingle();
+
+    if (existing) {
+      throw new ConflictException('Este usuario ya está vinculado como tu pupilo.');
+    }
+
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .insert({
+        identrenador: trainerId,
+        idusuario: clientId,
+        fechainicio: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new InternalServerErrorException(`No se pudo vincular el pupilo: ${error.message}`);
+    }
+    return data;
+  }
+
+  async unlinkClient(trainerId: string, clientId: string) {
+    const { error } = await this.supabaseService
+      .getClient()
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .delete()
+      .eq('identrenador', trainerId)
+      .eq('idusuario', clientId);
+
+    if (error) {
+      throw new InternalServerErrorException(`No se pudo desvincular el pupilo: ${error.message}`);
+    }
+    return { success: true, message: 'Pupilo desvinculado exitosamente.' };
+  }
+
+  async getAvailableClients(trainerId: string, trainerUserId: string) {
+    const { data: assigned } = await this.supabaseService
+      .getClient()
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('idusuario')
+      .eq('identrenador', trainerId);
+
+    const assignedIds = (assigned || []).map((a) => a.idusuario);
+    assignedIds.push(trainerUserId);
+
+    const { data: users, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('usuarios')
+      .select('idusuario, nombre, apellido, email, fotoperfil, puntostotales, roles(nombrerol)')
+      .order('nombre', { ascending: true })
+      .limit(50);
+
+    if (error) {
+      throw new InternalServerErrorException(`Error al obtener usuarios: ${error.message}`);
+    }
+
+    return (users || [])
+      .filter((u) => !assignedIds.includes(u.idusuario))
+      .map((u) => ({
+        id: u.idusuario,
+        idusuario: u.idusuario,
+        nombre: u.nombre,
+        apellido: u.apellido,
+        full_name: `${u.nombre || ''} ${u.apellido || ''}`.trim(),
+        email: u.email,
+        fotoperfil: u.fotoperfil,
+        puntostotales: u.puntostotales || 0,
+        nombrerol: (u.roles as any)?.nombrerol || 'Usuario',
+      }));
+  }
+
+  async getClientRecommendations(clientId: string) {
+    const { data, error } = await this.supabaseService
+      .getClient()
+      .schema('gestion')
+      .from('notificaciones')
+      .select('*')
+      .eq('idusuario', clientId)
+      .in('tipo', ['Recomendación', 'Recomendacion', 'Consejo', 'Motivación', 'Ajuste de Meta', 'Feedback'])
+      .order('fecha', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      throw new InternalServerErrorException(`Error al buscar recomendaciones: ${error.message}`);
+    }
+    return (data || []).map((n: any) => ({
+      id: n.idnotificacion,
+      mensaje: n.mensaje,
+      tipo: n.tipo,
+      fecha: n.fecha,
+      leida: n.leida,
+    }));
   }
 }
