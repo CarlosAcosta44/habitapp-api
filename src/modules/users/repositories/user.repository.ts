@@ -14,7 +14,7 @@ export class UserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<any> {
     const { data, error } = await this.client
       .from('usuarios')
-      .select('*')
+      .select('*, roles(nombrerol)')
       .eq('email', email)
       .maybeSingle();
 
@@ -27,7 +27,7 @@ export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<any> {
     const { data, error } = await this.client
       .from('usuarios')
-      .select('*')
+      .select('*, roles(nombrerol)')
       .eq('idusuario', id)
       .maybeSingle();
 

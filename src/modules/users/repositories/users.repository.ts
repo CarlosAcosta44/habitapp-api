@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -155,7 +156,8 @@ export class UsersRepository {
 
     return {
       ...this.mapUserProfileRow(data),
-      correo: email || '',
+      correo: data.email || data.correo || email || '',
+      email: data.email || data.correo || email || '',
       puntosFaltantesTop1,
     };
   }
@@ -165,6 +167,8 @@ export class UsersRepository {
       idusuario: u.idusuario,
       nombre: u.nombre,
       apellido: u.apellido,
+      correo: u.email || u.correo || '',
+      email: u.email || u.correo || '',
       fotoperfil: u.fotoperfil,
       telefono: u.telefono,
       genero: u.genero,
@@ -307,6 +311,28 @@ export class UsersRepository {
       throw new InternalServerErrorException(
         `No se pudo actualizar el rol: ${updateError.message}`,
       );
+    }
+
+    if (roleName === RoleName.TRAINER) {
+      const { data: existingTrainer } = await this.supabaseService
+        .getClient()
+        .schema('seguimiento')
+        .from('entrenadores')
+        .select('identrenador')
+        .eq('idusuario', userId)
+        .maybeSingle();
+
+      if (!existingTrainer) {
+        await this.supabaseService
+          .getClient()
+          .schema('seguimiento')
+          .from('entrenadores')
+          .insert({
+            idusuario: userId,
+            especialidad: 'Bienestar y Hábitos',
+            experiencia: 1,
+          });
+      }
     }
 
     return this.findProfileById(userId);
@@ -543,5 +569,243 @@ export class UsersRepository {
         icono: lg.icono,
       };
     });
+  }
+
+  /**
+   * Obtiene los entrenadores vinculados al usuario y las rutinas asignadas activas.
+   */
+  async getMyTrainerAndRoutines(userId: string) {
+    const client = this.supabaseService.getClient();
+
+    // 1. Obtener vínculos usuario_entrenador
+    const { data: links } = await client
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('identrenador, fechainicio')
+      .eq('idusuario', userId);
+
+    const trainerIds = (links || []).map((l: any) => l.identrenador);
+    let trainers: any[] = [];
+
+    if (trainerIds.length > 0) {
+      const { data: trainerRows } = await client
+        .schema('seguimiento')
+        .from('entrenadores')
+        .select('identrenador, idusuario, especialidad, experiencia, certificacion')
+        .in('identrenador', trainerIds);
+
+      const userIds = (trainerRows || []).map((t: any) => t.idusuario).filter(Boolean);
+      let userProfiles: any[] = [];
+      if (userIds.length > 0) {
+        const { data: usersData } = await client
+          .schema('gestion')
+          .from('usuarios')
+          .select('idusuario, nombre, apellido, email, fotoperfil')
+          .in('idusuario', userIds);
+        userProfiles = usersData || [];
+      }
+
+      trainers = (trainerRows || []).map((t: any) => {
+        const u = userProfiles.find((p: any) => p.idusuario === t.idusuario);
+        const link = (links || []).find((l: any) => l.identrenador === t.identrenador);
+        return {
+          identrenador: t.identrenador,
+          idusuario: t.idusuario,
+          nombre: u?.nombre || 'Entrenador',
+          apellido: u?.apellido || '',
+          full_name: `${u?.nombre || 'Entrenador'} ${u?.apellido || ''}`.trim(),
+          email: u?.email || '',
+          fotoperfil: u?.fotoperfil || null,
+          especialidad: t.especialidad || 'Salud Mental & Hábitos',
+          experiencia: t.experiencia ?? 3,
+          certificacion: t.certificacion || 'Coach Certificado HabitApp',
+          fechainicio: link?.fechainicio || null,
+        };
+      });
+    }
+
+    // 2. Obtener rutinas asignadas al usuario
+    const { data: routineLinks } = await client
+      .schema('seguimiento')
+      .from('usuario_rutina')
+      .select('idrutina, fechainicio, estado')
+      .eq('idusuario', userId)
+      .eq('estado', 'Activo');
+
+    const routineIds = (routineLinks || []).map((rl: any) => rl.idrutina);
+    let routines: any[] = [];
+
+    if (routineIds.length > 0) {
+      const { data: routineRows } = await client
+        .schema('seguimiento')
+        .from('rutinas')
+        .select('idrutina, objetivo, tipo, nivel, duracion, descripcion, identrenador')
+        .in('idrutina', routineIds);
+
+      routines = (routineRows || []).map((r: any) => {
+        const rl = (routineLinks || []).find((item: any) => item.idrutina === r.idrutina);
+        const [cleanDesc, habitsPart] = (r.descripcion || '').split('||HABITS:');
+        const habits = habitsPart
+          ? habitsPart.split(';').map((s: string) => s.trim()).filter(Boolean)
+          : [r.objetivo];
+        return {
+          idrutina: r.idrutina,
+          nombre: r.objetivo,
+          tipo: r.tipo || 'Bienestar',
+          nivel: r.nivel || 'Principiante',
+          duracion: r.duracion ?? 21,
+          descripcion: cleanDesc.trim(),
+          habits,
+          fechainicio: rl?.fechainicio || null,
+          estado: rl?.estado || 'Activo',
+          identrenador: r.identrenador,
+        };
+      });
+    }
+
+    return { trainers, routines };
+  }
+
+  /**
+   * Vincula al usuario autenticado como pupilo de un entrenador (por identrenador o idusuario del coach).
+   */
+  async linkMyTrainer(userId: string, trainerIdOrUserId: string) {
+    const client = this.supabaseService.getClient();
+
+    // Resolver el registro de seguimiento.entrenadores
+    let { data: trainer } = await client
+      .schema('seguimiento')
+      .from('entrenadores')
+      .select('identrenador, idusuario, especialidad')
+      .eq('identrenador', trainerIdOrUserId)
+      .maybeSingle();
+
+    if (!trainer) {
+      const { data: byUser } = await client
+        .schema('seguimiento')
+        .from('entrenadores')
+        .select('identrenador, idusuario, especialidad')
+        .eq('idusuario', trainerIdOrUserId)
+        .maybeSingle();
+      trainer = byUser;
+    }
+
+    // Si aún no existe fila en seguimiento.entrenadores pero el id pertenece a un usuario Entrenador, crearla
+    if (!trainer) {
+      const { data: coachUser } = await client
+        .schema('gestion')
+        .from('usuarios')
+        .select('idusuario, roles(nombrerol)')
+        .eq('idusuario', trainerIdOrUserId)
+        .maybeSingle<any>();
+
+      if (coachUser) {
+        const { data: createdTrainer } = await client
+          .schema('seguimiento')
+          .from('entrenadores')
+          .insert({
+            idusuario: coachUser.idusuario,
+            especialidad: 'Salud Mental & Hábitos',
+            experiencia: 3,
+          })
+          .select('identrenador, idusuario, especialidad')
+          .single();
+        trainer = createdTrainer;
+      }
+    }
+
+    if (!trainer) {
+      throw new NotFoundException('No se encontró el entrenador seleccionado.');
+    }
+
+    if (trainer.idusuario === userId) {
+      throw new BadRequestException('No puedes vincularte a ti mismo como entrenador.');
+    }
+
+    const { data: existing } = await client
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .select('identrenador')
+      .eq('idusuario', userId)
+      .eq('identrenador', trainer.identrenador)
+      .maybeSingle();
+
+    if (!existing) {
+      const { error } = await client
+        .schema('seguimiento')
+        .from('usuario_entrenador')
+        .insert({
+          idusuario: userId,
+          identrenador: trainer.identrenador,
+          fechainicio: new Date().toISOString().split('T')[0],
+        });
+
+      if (error) {
+        throw new InternalServerErrorException(`No se pudo vincular al entrenador: ${error.message}`);
+      }
+
+      // Notificar al entrenador
+      const { data: pupil } = await client
+        .schema('gestion')
+        .from('usuarios')
+        .select('nombre, apellido')
+        .eq('idusuario', userId)
+        .maybeSingle();
+
+      const pupilName = pupil ? `${pupil.nombre || ''} ${pupil.apellido || ''}`.trim() : 'Un nuevo alumno';
+      if (trainer.idusuario) {
+        await client
+          .schema('gestion')
+          .from('notificaciones')
+          .insert({
+            idusuario: trainer.idusuario,
+            mensaje: `¡Nuevo pupilo! ${pupilName} se ha vinculado a tu supervisión como cliente desde la comunidad.`,
+            tipo: 'Entrenador',
+            leida: false,
+          });
+      }
+    }
+
+    return {
+      success: true,
+      identrenador: trainer.identrenador,
+      idusuario_entrenador: trainer.idusuario,
+      message: 'Te has vinculado exitosamente al entrenador.',
+    };
+  }
+
+  /**
+   * Desvincula al usuario autenticado de un entrenador.
+   */
+  async unlinkMyTrainer(userId: string, trainerIdOrUserId: string) {
+    const client = this.supabaseService.getClient();
+
+    let targetTrainerId = trainerIdOrUserId;
+    const { data: byUser } = await client
+      .schema('seguimiento')
+      .from('entrenadores')
+      .select('identrenador')
+      .eq('idusuario', trainerIdOrUserId)
+      .maybeSingle();
+
+    if (byUser?.identrenador) {
+      targetTrainerId = byUser.identrenador;
+    }
+
+    const { error } = await client
+      .schema('seguimiento')
+      .from('usuario_entrenador')
+      .delete()
+      .eq('idusuario', userId)
+      .eq('identrenador', targetTrainerId);
+
+    if (error) {
+      throw new InternalServerErrorException(`No se pudo desvincular del entrenador: ${error.message}`);
+    }
+
+    return {
+      success: true,
+      message: 'Te has desvinculado del entrenador exitosamente.',
+    };
   }
 }

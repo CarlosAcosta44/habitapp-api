@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Patch,
   Post,
   UseGuards,
@@ -176,5 +178,35 @@ export class UsersController {
     @Body('fcm_token') fcmToken: string,
   ) {
     return this.usersService.updateFcmToken(user.userId, fcmToken);
+  }
+
+  @Get('me/trainer')
+  @ApiOperation({
+    summary: 'Obtener entrenadores vinculados y rutinas asignadas del usuario actual',
+  })
+  getMyTrainerAndRoutines(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.getMyTrainerAndRoutines(user.userId);
+  }
+
+  @Post('me/trainer/:trainerId')
+  @ApiOperation({
+    summary: 'Vincular al usuario actual como cliente/pupilo de un entrenador',
+  })
+  linkMyTrainer(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('trainerId') trainerId: string,
+  ) {
+    return this.usersService.linkMyTrainer(user.userId, trainerId);
+  }
+
+  @Delete('me/trainer/:trainerId')
+  @ApiOperation({
+    summary: 'Desvincular al usuario actual de un entrenador',
+  })
+  unlinkMyTrainer(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('trainerId') trainerId: string,
+  ) {
+    return this.usersService.unlinkMyTrainer(user.userId, trainerId);
   }
 }

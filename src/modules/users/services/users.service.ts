@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
-import { UpdateUserProfileDto } from '../dto/user-profile.dto';
+import { UpdateUserProfileDto, RoleName } from '../dto/user-profile.dto';
 import { UsersRepository } from '../repositories/users.repository';
 
 @Injectable()
@@ -40,11 +40,21 @@ export class UsersService {
   ) {
     if (actorId === targetUserId) {
       throw new BadRequestException(
-        'No puedes cambiar tu propio rol desde este endpoint',
+        'Por seguridad no puedes cambiar tu propio rol de administrador.',
       );
     }
 
-    return this.usersRepository.updateRole(targetUserId, dto.nombrerol);
+    const rawRole = (dto.nombrerol || dto.role || '').toString().toLowerCase();
+    let targetRole: RoleName = RoleName.USER;
+    if (rawRole.includes('admin')) {
+      targetRole = RoleName.ADMIN;
+    } else if (rawRole.includes('entrenador') || rawRole.includes('trainer')) {
+      targetRole = RoleName.TRAINER;
+    } else {
+      targetRole = RoleName.USER;
+    }
+
+    return this.usersRepository.updateRole(targetUserId, targetRole);
   }
 
   updateUserStatus(
@@ -82,5 +92,20 @@ export class UsersService {
   /** Logros desbloqueados por el usuario */
   getAchievements(userId: string) {
     return this.usersRepository.getAchievements(userId);
+  }
+
+  /** Entrenadores vinculados y rutinas asignadas al usuario actual */
+  getMyTrainerAndRoutines(userId: string) {
+    return this.usersRepository.getMyTrainerAndRoutines(userId);
+  }
+
+  /** Vincular al usuario autenticado con un entrenador */
+  linkMyTrainer(userId: string, trainerId: string) {
+    return this.usersRepository.linkMyTrainer(userId, trainerId);
+  }
+
+  /** Desvincular al usuario autenticado de un entrenador */
+  unlinkMyTrainer(userId: string, trainerId: string) {
+    return this.usersRepository.unlinkMyTrainer(userId, trainerId);
   }
 }

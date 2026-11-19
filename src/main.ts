@@ -1,10 +1,13 @@
-import * as Sentry from '@sentry/nestjs';
-
-// Initialize Sentry before the application starts
-Sentry.init({
-  dsn: process.env.SENTRY_DSN || 'https://placeholder@o0.ingest.sentry.io/0',
-  tracesSampleRate: 1.0,
-});
+// Initialize Sentry only in production with a valid DSN
+const sentryDsn = process.env.SENTRY_DSN;
+if (process.env.NODE_ENV === 'production' && sentryDsn && !sentryDsn.includes('placeholder')) {
+   
+  const Sentry = require('@sentry/nestjs');
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 0.1,
+  });
+}
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';

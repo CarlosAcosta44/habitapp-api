@@ -22,7 +22,7 @@ export class ReportsRepository {
       .getClient()
       .schema('gestion')
       .from('usuarios')
-      .select('nombre, puntostotales')
+      .select('nombre, apellido, email, fotoperfil, puntostotales')
       .eq('idusuario', userId)
       .single();
 
