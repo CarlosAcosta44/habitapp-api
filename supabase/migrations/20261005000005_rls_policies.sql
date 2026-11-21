@@ -679,5 +679,12 @@ ALTER TABLE seguimiento.perfil_salud ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE seguimiento.seguimientos ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE gestion.refresh_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Remediación DEF-005 (CP-INT-080): Habilitación de RLS y bloqueo de acceso directo anon en gestion.usuarios y seguimiento.*
+ALTER TABLE gestion.usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seguimiento.habitos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seguimiento.registro_habitos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seguimiento.rutinas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seguimiento.usuario_entrenador ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seguimiento.usuario_rutina ENABLE ROW LEVEL SECURITY;
