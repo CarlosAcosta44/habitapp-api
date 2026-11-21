@@ -120,8 +120,11 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile(
       new ParseFilePipeBuilder()
-        .addFileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' })
-        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+        .addFileTypeValidator({
+          fileType: '.(png|jpeg|jpg|webp)',
+          fallbackToMimetype: true,
+        })
+        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 })
         .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
     )
     file: Express.Multer.File,

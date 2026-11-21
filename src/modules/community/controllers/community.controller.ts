@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards, HttpCode, HttpStatus, UnauthorizedException, UseInterceptors, UploadedFile, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards, HttpCode, HttpStatus, UnauthorizedException, UseInterceptors, UploadedFile, ParseFilePipeBuilder, Put, Delete } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CommunityService } from '../services/community.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -61,7 +61,16 @@ export class ComunidadController {
   @ApiOperation({ summary: 'Subir una imagen para un foro o comentario' })
   async uploadImage(
     @Req() req: any,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: '.(png|jpeg|jpg|webp)',
+          fallbackToMimetype: true,
+        })
+        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 + 1 })
+        .build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY }),
+    )
+    file: Express.Multer.File,
   ) {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException('No autenticado');
