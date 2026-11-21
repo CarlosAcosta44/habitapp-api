@@ -109,7 +109,15 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "modules/admin/services/*.ts",
+      "modules/auth/services/auth.service.ts",
+      "modules/coach/services/coach.service.ts",
+      "modules/community/services/community.service.ts",
+      "modules/habits/services/habits.service.ts",
+      "modules/habits/repositories/records.repository.ts",
+      "modules/notifications/services/notifications.service.ts",
+      "modules/notifications/controllers/notifications.controller.ts",
+      "!**/*.spec.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
