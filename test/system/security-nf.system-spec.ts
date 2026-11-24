@@ -188,7 +188,7 @@ describe('PR-06 Suite de Sistema No Funcional en API — Rendimiento, Concurrenc
     expect(totalPointsAwarded).toBe(10);
   });
 
-  it('CP-NF-006 (OWASP A01 y A07): Bloquea escalada vertical de privilegios (403) y tokens con algoritmo "none" o firma adulterada (401)', async () => {
+  it('CP-NF-006 (OWASP Top 10 / DAST): Bloquea escalada de privilegios (403), tokens alg:none (401), SQLi/XSS en ValidationPipe (400) y archivos >= 5.242.881 B (422)', async () => {
     await request(app.getHttpServer())
       .get('/api/v1/admin/users')
       .set('Authorization', `Bearer ${userToken}`)
@@ -208,9 +208,7 @@ describe('PR-06 Suite de Sistema No Funcional en API — Rendimiento, Concurrenc
       .get('/api/v1/users/me')
       .set('Authorization', `Bearer ${algNoneToken}`)
       .expect(401);
-  });
 
-  it('CP-NF-006 (OWASP A03 y A05): ValidationPipe filtra propiedades maliciosas inyectadas y ParseFilePipeBuilder bloquea >= 5.242.881 B con 422', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/users/records/completar')
       .set('Authorization', `Bearer ${userToken}`)
