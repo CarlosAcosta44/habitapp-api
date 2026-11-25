@@ -21,158 +21,304 @@ export class ReportsService {
     }
   }
 
+  private resolvePeriodDays(period: 'week' | 'month' | 'year'): number {
+    if (period === 'week') return 7;
+    if (period === 'month') return 30;
+    return 365;
+  }
+
+  private groupHabitRecordsByDate(records: any[] | null | undefined): Record<string, string[]> {
+    const recordsByDate: Record<string, string[]> = {};
+    if (!records) return recordsByDate;
+    for (const r of records) {
+      if (!recordsByDate[r.fecha]) recordsByDate[r.fecha] = [];
+      recordsByDate[r.fecha].push(r.idhabito);
+    }
+    return recordsByDate;
+  }
+
+  private evaluateSingleDayForHabit(ctx: {
+    h: any;
+    currentDate: Date;
+    today: Date;
+    periodStartDate: Date;
+    habDay: number;
+    jsDay: number;
+    completedIds: string[];
+    statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }>;
+    volumenSemanal: number[];
+  }): { scheduled: boolean; completed: boolean; inPeriod: boolean } {
+    const {
+      h,
+      currentDate,
+      today,
+      periodStartDate,
+      habDay,
+      jsDay,
+      completedIds,
+      statsByHabit,
+      volumenSemanal,
+    } = ctx;
+    const hStart = new Date(h.fechainicio);
+    hStart.setHours(0, 0, 0, 0);
+
+    if (h.estado !== 'Activo' || currentDate < hStart || !h.dias_semana?.includes(habDay)) {
+      return { scheduled: false, completed: true, inPeriod: false };
+    }
+
+    statsByHabit[h.idhabito].expected++;
+    const isCompleted = completedIds.includes(h.idhabito);
+    const inPeriod = currentDate >= periodStartDate;
+
+    if (isCompleted) {
+      statsByHabit[h.idhabito].completed++;
+      statsByHabit[h.idhabito].currentStreak++;
+      statsByHabit[h.idhabito].maxStreak = Math.max(
+        statsByHabit[h.idhabito].maxStreak,
+        statsByHabit[h.idhabito].currentStreak,
+      );
+      const sevenDaysAgo = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
+      if (currentDate >= sevenDaysAgo) {
+        const arrIndex = jsDay === 0 ? 6 : jsDay - 1;
+        volumenSemanal[arrIndex]++;
+      }
+    } else if (currentDate < today) {
+      statsByHabit[h.idhabito].currentStreak = 0;
+    }
+
+    return { scheduled: true, completed: isCompleted, inPeriod };
+  }
+
+  private evaluateAllHabitsOnDate(ctx: {
+    allHabits: any[];
+    currentDate: Date;
+    today: Date;
+    periodStartDate: Date;
+    completedIds: string[];
+    statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }>;
+    volumenSemanal: number[];
+  }): { anyScheduled: boolean; allCompletedForDay: boolean; dayExpectedInPeriod: number; dayCompletedInPeriod: number } {
+    const jsDay = ctx.currentDate.getDay();
+    const habDay = jsDay === 0 ? 7 : jsDay;
+    let allCompletedForDay = true;
+    let anyScheduled = false;
+    let dayExpectedInPeriod = 0;
+    let dayCompletedInPeriod = 0;
+
+    for (const h of ctx.allHabits) {
+      const res = this.evaluateSingleDayForHabit({
+        h,
+        currentDate: ctx.currentDate,
+        today: ctx.today,
+        periodStartDate: ctx.periodStartDate,
+        habDay,
+        jsDay,
+        completedIds: ctx.completedIds,
+        statsByHabit: ctx.statsByHabit,
+        volumenSemanal: ctx.volumenSemanal,
+      });
+      if (!res.scheduled) continue;
+      anyScheduled = true;
+      if (res.inPeriod) {
+        dayExpectedInPeriod++;
+        if (res.completed) dayCompletedInPeriod++;
+      }
+      if (!res.completed) {
+        allCompletedForDay = false;
+      }
+    }
+
+    return { anyScheduled, allCompletedForDay, dayExpectedInPeriod, dayCompletedInPeriod };
+  }
+
+  private updateDailyGlobalStreak(
+    anyScheduled: boolean,
+    allCompletedForDay: boolean,
+    currentDate: Date,
+    today: Date,
+    globalCurrentStreak: number,
+    rachaMaxima: number,
+  ): { globalCurrentStreak: number; rachaMaxima: number } {
+    if (!anyScheduled) {
+      return { globalCurrentStreak, rachaMaxima };
+    }
+    if (allCompletedForDay) {
+      const nextStreak = globalCurrentStreak + 1;
+      return {
+        globalCurrentStreak: nextStreak,
+        rachaMaxima: Math.max(rachaMaxima, nextStreak),
+      };
+    }
+    if (currentDate < today) {
+      return { globalCurrentStreak: 0, rachaMaxima };
+    }
+    return { globalCurrentStreak, rachaMaxima };
+  }
+
+  private findBestAndWorstHabit(
+    activeHabits: any[],
+    statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }>,
+  ) {
+    let masConstante: any = null;
+    let oportunidadMejora: any = null;
+    let maxRate = -1;
+    let minRate = 101;
+
+    for (const h of activeHabits) {
+      const stats = statsByHabit[h.idhabito];
+      if (!stats || stats.expected <= 0) continue;
+      const rate = (stats.completed / stats.expected) * 100;
+      if (rate > maxRate) {
+        maxRate = rate;
+        masConstante = { nombre: h.nombre, racha: stats.currentStreak, rate: Math.round(rate) };
+      }
+      if (rate < minRate) {
+        minRate = rate;
+        oportunidadMejora = { nombre: h.nombre, rate: Math.round(rate) };
+      }
+    }
+
+    return { masConstante, oportunidadMejora };
+  }
+
+  private computeActiveHabitsAnalytics(
+    allHabits: any[],
+    activeHabits: any[],
+    recordsByDate: Record<string, string[]>,
+    today: Date,
+    periodDays: number,
+  ) {
+    let totalEsperado = 0;
+    let totalCumplido = 0;
+    let rachaMaxima = 0;
+    let globalCurrentStreak = 0;
+    const volumenSemanal = [0, 0, 0, 0, 0, 0, 0];
+    const consistenciaMes: any[] = [];
+    const statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }> = {};
+
+    for (const h of activeHabits) {
+      statsByHabit[h.idhabito] = { expected: 0, completed: 0, currentStreak: 0, maxStreak: 0 };
+    }
+
+    const periodStartDate = new Date(today);
+    periodStartDate.setDate(today.getDate() - periodDays + 1);
+    const thirtyDaysAgo = new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000);
+
+    const oldestHabitDate = new Date(Math.min(...allHabits.map((h) => new Date(h.fechainicio).getTime())));
+    const currentDate = new Date(oldestHabitDate);
+    currentDate.setHours(0, 0, 0, 0);
+
+    while (currentDate <= today) {
+      const dStr = currentDate.toISOString().split('T')[0];
+      const completedIds = recordsByDate[dStr] || [];
+
+      const dayEval = this.evaluateAllHabitsOnDate({
+        allHabits,
+        currentDate,
+        today,
+        periodStartDate,
+        completedIds,
+        statsByHabit,
+        volumenSemanal,
+      });
+
+      totalEsperado += dayEval.dayExpectedInPeriod;
+      totalCumplido += dayEval.dayCompletedInPeriod;
+
+      const streakState = this.updateDailyGlobalStreak(
+        dayEval.anyScheduled,
+        dayEval.allCompletedForDay,
+        currentDate,
+        today,
+        globalCurrentStreak,
+        rachaMaxima,
+      );
+      globalCurrentStreak = streakState.globalCurrentStreak;
+      rachaMaxima = streakState.rachaMaxima;
+
+      if (currentDate >= thirtyDaysAgo) {
+        consistenciaMes.push({ fecha: dStr, activos: completedIds.length });
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const rachaActual = globalCurrentStreak;
+    rachaMaxima = Math.max(rachaMaxima, rachaActual);
+    const { masConstante, oportunidadMejora } = this.findBestAndWorstHabit(activeHabits, statsByHabit);
+
+    return {
+      totalEsperado,
+      totalCumplido,
+      rachaActual,
+      rachaMaxima,
+      masConstante,
+      oportunidadMejora,
+      volumenSemanal,
+      consistenciaMes,
+      statsByHabit,
+    };
+  }
+
+  private mapActiveHabitsForSummary(
+    activeHabits: any[],
+    recordsByDate: Record<string, string[]>,
+    statsByHabit: Record<string, { expected: number; completed: number }>,
+    todayStr: string,
+  ) {
+    return activeHabits.map((h: any) => {
+      const desc = h.descripcion || '';
+      const isCoachAssigned = desc.startsWith('[Coach') || desc.toLowerCase().includes('[asignado');
+      return {
+        id: h.idhabito,
+        nombre: h.nombre,
+        descripcion: desc,
+        tipo: isCoachAssigned ? 'Asignado' : (h.tipo || 'Personal'),
+        meta: h.meta_diaria ? `${h.meta_diaria} / día` : 'Meta diaria',
+        completadoHoy: recordsByDate[todayStr]?.includes(h.idhabito) || false,
+        stats: statsByHabit[h.idhabito] || { completed: 0, expected: 0 },
+      };
+    });
+  }
+
   async getUserSummary(userId: string, period: 'week' | 'month' | 'year' = 'week') {
     try {
       const today = new Date();
-      today.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
 
-      // 1. Obtener datos del perfil
       const userProfile = await this.reportsRepository.getUserProfile(userId);
-
-      // 2. Obtener TODOS los hábitos (Activos e Inactivos) para calcular historial real
       const allHabits = await this.reportsRepository.getAllHabits(userId);
-      const activeHabits = allHabits.filter(h => h.estado === 'Activo');
+      const activeHabits = allHabits.filter((h) => h.estado === 'Activo');
 
-      // 3. Obtener registros de hábitos completados (hasta 1 año para cálculos)
       const oneYearAgo = new Date(today);
       oneYearAgo.setFullYear(today.getFullYear() - 1);
       const startDate = oneYearAgo.toISOString().split('T')[0];
       const records = await this.reportsRepository.getHabitRecordsFromDate(userId, startDate);
 
-      // Variables para resultados
-      let cumplimientoGlobal = 0;
-      let totalEsperado = 0;
-      let totalCumplido = 0;
-      let rachaActual = 0;
-      let rachaMaxima = 0;
-      let masConstante: any = null;
-      let oportunidadMejora: any = null;
-      const volumenSemanal = [0, 0, 0, 0, 0, 0, 0]; // L, M, X, J, V, S, D
-      const consistenciaMes: any[] = [];
-      const recordsByDate: Record<string, string[]> = {};
-      const statsByHabit: Record<string, { expected: number, completed: number, currentStreak: number, maxStreak: number }> = {};
+      const recordsByDate = this.groupHabitRecordsByDate(records);
+      const periodDays = this.resolvePeriodDays(period);
 
-      if (records) {
-        for (const r of records) {
-          if (!recordsByDate[r.fecha]) recordsByDate[r.fecha] = [];
-          recordsByDate[r.fecha].push(r.idhabito);
-        }
-      }
+      const analytics =
+        activeHabits.length > 0
+          ? this.computeActiveHabitsAnalytics(allHabits, activeHabits, recordsByDate, today, periodDays)
+          : {
+              totalEsperado: 0,
+              totalCumplido: 0,
+              rachaActual: 0,
+              rachaMaxima: 0,
+              masConstante: null,
+              oportunidadMejora: null,
+              volumenSemanal: [0, 0, 0, 0, 0, 0, 0],
+              consistenciaMes: [],
+              statsByHabit: {},
+            };
 
-      if (activeHabits && activeHabits.length > 0) {
-        // Inicializar stats por hábito
-        activeHabits.forEach(h => {
-          statsByHabit[h.idhabito] = { expected: 0, completed: 0, currentStreak: 0, maxStreak: 0 };
-        });
+      const cumplimientoGlobal =
+        analytics.totalEsperado > 0
+          ? Math.round((analytics.totalCumplido / analytics.totalEsperado) * 100)
+          : 0;
 
-        // Filtrar periodo (para el cumplimiento global)
-        const periodDays = period === 'week' ? 7 : (period === 'month' ? 30 : 365);
-        const periodStartDate = new Date(today);
-        periodStartDate.setDate(today.getDate() - periodDays + 1);
-
-        // Procesar días desde el más antiguo hasta hoy usando TODOS los hábitos
-        const oldestHabitDate = new Date(Math.min(...allHabits.map(h => new Date(h.fechainicio).getTime())));
-        const currentDate = new Date(oldestHabitDate);
-        currentDate.setHours(0,0,0,0);
-
-        let globalCurrentStreak = 0;
-
-        while (currentDate <= today) {
-          const dStr = currentDate.toISOString().split('T')[0];
-          const jsDay = currentDate.getDay();
-          const habDay = jsDay === 0 ? 7 : jsDay;
-          const completedIds = recordsByDate[dStr] || [];
-          
-          let allCompletedForDay = true;
-          let anyScheduled = false;
-
-          for (const h of allHabits) {
-            const hStart = new Date(h.fechainicio);
-            hStart.setHours(0,0,0,0);
-            
-            if (h.estado !== 'Activo') continue;
-
-            if (currentDate >= hStart && h.dias_semana && h.dias_semana.includes(habDay)) {
-              anyScheduled = true;
-              
-              if (h.estado === 'Activo') {
-                statsByHabit[h.idhabito].expected++;
-              }
-              
-              const isCompleted = completedIds.includes(h.idhabito);
-              
-              if (currentDate >= periodStartDate) {
-                totalEsperado++;
-                if (isCompleted) totalCumplido++;
-              }
-
-              if (isCompleted) {
-                if (h.estado === 'Activo') {
-                  statsByHabit[h.idhabito].completed++;
-                  statsByHabit[h.idhabito].currentStreak++;
-                  statsByHabit[h.idhabito].maxStreak = Math.max(statsByHabit[h.idhabito].maxStreak, statsByHabit[h.idhabito].currentStreak);
-                }
-              } else {
-                allCompletedForDay = false;
-                if (currentDate < today) {
-                  if (h.estado === 'Activo') {
-                    statsByHabit[h.idhabito].currentStreak = 0;
-                  }
-                }
-              }
-
-              // Calcular volumen semanal
-              if (currentDate >= new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000)) {
-                if (isCompleted) {
-                  // Mapear JS day (0=Dom, 1=Lun) a índice de arreglo (0=Lun, 6=Dom)
-                  const arrIndex = jsDay === 0 ? 6 : jsDay - 1;
-                  volumenSemanal[arrIndex]++;
-                }
-              }
-            }
-          }
-
-          if (anyScheduled) {
-             if (allCompletedForDay) {
-               globalCurrentStreak++;
-               rachaMaxima = Math.max(rachaMaxima, globalCurrentStreak);
-             } else if (currentDate < today) {
-               globalCurrentStreak = 0;
-             }
-          }
-
-          // Consistencia mes
-          if (currentDate >= new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000)) {
-             consistenciaMes.push({
-               fecha: dStr,
-               activos: completedIds.length
-             });
-          }
-
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-        
-        rachaActual = globalCurrentStreak;
-        rachaMaxima = Math.max(rachaMaxima, rachaActual);
-
-        // Identificar constante y oportunidad
-        let maxRate = -1;
-        let minRate = 101;
-        activeHabits.forEach(h => {
-          const stats = statsByHabit[h.idhabito];
-          const rate = stats.expected > 0 ? (stats.completed / stats.expected) * 100 : 0;
-          if (rate > maxRate && stats.expected > 0) {
-            maxRate = rate;
-            masConstante = { nombre: h.nombre, racha: stats.currentStreak, rate: Math.round(rate) };
-          }
-          if (rate < minRate && stats.expected > 0) {
-            minRate = rate;
-            oportunidadMejora = { nombre: h.nombre, rate: Math.round(rate) };
-          }
-        });
-      }
-
-      cumplimientoGlobal = totalEsperado > 0 ? Math.round((totalCumplido / totalEsperado) * 100) : 0;
+      const todayStr = today.toISOString().split('T')[0];
 
       return {
         userId,
@@ -182,33 +328,24 @@ export class ReportsService {
         fotoperfil: userProfile?.fotoperfil,
         puntos_totales: userProfile?.puntostotales || 0,
         cumplimiento_global: cumplimientoGlobal,
-        total_esperado: totalEsperado,
-        total_cumplido: totalCumplido,
-        racha_actual: rachaActual,
-        racha_maxima: rachaMaxima,
-        mas_constante: masConstante,
-        oportunidad_mejora: oportunidadMejora,
-        volumen_semanal: volumenSemanal,
-        consistencia_mes: consistenciaMes,
+        total_esperado: analytics.totalEsperado,
+        total_cumplido: analytics.totalCumplido,
+        racha_actual: analytics.rachaActual,
+        racha_maxima: analytics.rachaMaxima,
+        mas_constante: analytics.masConstante,
+        oportunidad_mejora: analytics.oportunidadMejora,
+        volumen_semanal: analytics.volumenSemanal,
+        consistencia_mes: analytics.consistenciaMes,
         recordsByDate,
-        activeHabits: (activeHabits || []).map((h: any) => {
-          const desc = h.descripcion || '';
-          const isCoachAssigned =
-            desc.startsWith('[Coach') ||
-            desc.toLowerCase().includes('[asignado');
-          return {
-            id: h.idhabito,
-            nombre: h.nombre,
-            descripcion: desc,
-            tipo: isCoachAssigned ? 'Asignado' : (h.tipo || 'Personal'),
-            meta: h.meta_diaria ? `${h.meta_diaria} / día` : 'Meta diaria',
-            completadoHoy: recordsByDate[today.toISOString().split('T')[0]]?.includes(h.idhabito) || false,
-            stats: statsByHabit[h.idhabito] || { completed: 0, expected: 0 },
-          };
-        }),
-        insight: oportunidadMejora 
-          ? `El hábito "${oportunidadMejora.nombre}" requiere más de tu atención. Intenta configurar recordatorios para mantener el impulso.` 
-          : "¡Excelente trabajo! Estás manteniendo una consistencia increíble."
+        activeHabits: this.mapActiveHabitsForSummary(
+          activeHabits,
+          recordsByDate,
+          analytics.statsByHabit,
+          todayStr,
+        ),
+        insight: analytics.oportunidadMejora
+          ? `El hábito "${analytics.oportunidadMejora.nombre}" requiere más de tu atención. Intenta configurar recordatorios para mantener el impulso.`
+          : '¡Excelente trabajo! Estás manteniendo una consistencia increíble.',
       };
     } catch (error: any) {
       throw new InternalServerErrorException('Error al obtener el resumen del usuario: ' + error.message);
@@ -275,14 +412,14 @@ export class ReportsService {
     }
   }
 
-  async getComparativeReport() {
+  getComparativeReport() {
     // Retornamos datos de ejemplo que coincidan con la estructura ComparativaGraphed del frontend
-    return {
+    return Promise.resolve({
       diasSemana: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
       data: [
         { categoriaId: 'salud', vals: [2, 3, 4, 3, 5, 4, 6] },
         { categoriaId: 'enfoque', vals: [1, 2, 2, 4, 3, 5, 4] },
       ],
-    };
+    });
   }
 }

@@ -252,7 +252,7 @@ export class CoachRepository {
       fechaFin = end.toISOString().split('T')[0];
     }
 
-    let createdCount = 0;
+    const rowsToInsert: Array<Record<string, unknown>> = [];
     for (const h of habitsToCreate) {
       const cleanName = (h.habit_name || routine.name || 'Hábito de Rutina').trim().slice(0, 45);
       if (!cleanName || existingNames.has(cleanName.toLowerCase())) {
@@ -260,31 +260,32 @@ export class CoachRepository {
       }
 
       const cleanDesc = `[Coach: ${routine.name}] ${routine.description || 'Protocolo asignado por tu entrenador'}`.slice(0, 200);
-
-      const { error } = await client
-        .schema('seguimiento')
-        .from('habitos')
-        .insert({
-          nombre: cleanName,
-          descripcion: cleanDesc,
-          fechainicio: fechaInicio,
-          fechafin: fechaFin,
-          estado: 'Activo',
-          puntos: 15,
-          idusuario: clientId,
-          idcategoria: categoryId,
-          meta_diaria: 1,
-          unidad_medida: 'veces',
-          dias_semana: [1, 2, 3, 4, 5, 6, 7],
-        });
-
-      if (!error) {
-        createdCount++;
-        existingNames.add(cleanName.toLowerCase());
-      }
+      existingNames.add(cleanName.toLowerCase());
+      rowsToInsert.push({
+        nombre: cleanName,
+        descripcion: cleanDesc,
+        fechainicio: fechaInicio,
+        fechafin: fechaFin,
+        estado: 'Activo',
+        puntos: 15,
+        idusuario: clientId,
+        idcategoria: categoryId,
+        meta_diaria: 1,
+        unidad_medida: 'veces',
+        dias_semana: [1, 2, 3, 4, 5, 6, 7],
+      });
     }
 
-    return createdCount;
+    if (rowsToInsert.length === 0) {
+      return 0;
+    }
+
+    const { error } = await client
+      .schema('seguimiento')
+      .from('habitos')
+      .insert(rowsToInsert);
+
+    return error ? 0 : rowsToInsert.length;
   }
 
   async createRecommendation(clientId: string, message: string, type: string = 'Recomendación') {

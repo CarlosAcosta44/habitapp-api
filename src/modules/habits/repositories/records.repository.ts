@@ -222,6 +222,27 @@ export class RecordsRepository {
     return data && data.length > 0 ? this.mapToDomain(data[0]) : null;
   }
 
+  private calcularRachaMaximaHistorica(
+    fechasCompletadas: Set<string>,
+    getDiaProgramadoAnterior: (fechaStr: string) => string,
+  ): number {
+    let rachaMaxima = 0;
+    let rachaTemp = 0;
+    const fechasAsc = Array.from(fechasCompletadas).sort((a, b) => a.localeCompare(b));
+
+    for (let i = 0; i < fechasAsc.length; i++) {
+      if (i === 0) {
+        rachaTemp = 1;
+      } else {
+        const esperadoAnterior = getDiaProgramadoAnterior(fechasAsc[i]);
+        rachaTemp = fechasAsc[i - 1] === esperadoAnterior ? rachaTemp + 1 : 1;
+      }
+      rachaMaxima = Math.max(rachaMaxima, rachaTemp);
+    }
+
+    return rachaMaxima;
+  }
+
   async calcularRacha(habitoId: string, usuarioId: string, tzOffset: number = 0) {
     const { data, error } = await this.db
       .from('registro_habitos')
@@ -245,7 +266,7 @@ export class RecordsRepository {
       .maybeSingle<{ dias_semana?: number[] }>();
 
     const diasProgramados: number[] =
-      habitoData?.dias_semana && Array.isArray(habitoData.dias_semana) && habitoData.dias_semana.length > 0
+      Array.isArray(habitoData?.dias_semana) && habitoData.dias_semana.length > 0
         ? habitoData.dias_semana
         : [1, 2, 3, 4, 5, 6, 7];
 
@@ -287,8 +308,6 @@ export class RecordsRepository {
     const fechasCompletadas = new Set(registros.map((r) => r.fecha));
 
     let rachaActual = 0;
-
-    // La racha se mantiene viva si completó hoy (si es programado), o si completó el último día programado exigido
     const estaRachaViva =
       registroMasReciente === ultimoProgramadoRequerido ||
       (hoyEsProgramado && registroMasReciente === penultimoProgramadoRequerido);
@@ -301,27 +320,10 @@ export class RecordsRepository {
       }
     }
 
-    let rachaMaxima = 0;
-    let rachaTemp = 0;
-    const fechasAsc = Array.from(fechasCompletadas).sort((a, b) => a.localeCompare(b));
-
-    for (let i = 0; i < fechasAsc.length; i++) {
-      const fechaActual = fechasAsc[i];
-      if (i === 0) {
-        rachaTemp = 1;
-      } else {
-        const fechaAnterior = fechasAsc[i - 1];
-        const esperadoAnterior = getDiaProgramadoAnterior(fechaActual);
-        if (fechaAnterior === esperadoAnterior) {
-          rachaTemp++;
-        } else {
-          rachaTemp = 1;
-        }
-      }
-      if (rachaTemp > rachaMaxima) {
-        rachaMaxima = rachaTemp;
-      }
-    }
+    const rachaMaxima = this.calcularRachaMaximaHistorica(
+      fechasCompletadas,
+      getDiaProgramadoAnterior,
+    );
 
     return { idHabito: habitoId, rachaActual, rachaMaxima, totalCompletados };
   }

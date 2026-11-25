@@ -15,7 +15,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import * as dns from 'dns';
+import * as dns from 'node:dns';
 
 // Fix Node 18+ fetch timeouts due to IPv6 preference
 dns.setDefaultResultOrder('ipv4first');

@@ -45,7 +45,7 @@ export class UsersService {
     }
 
     const rawRole = (dto.nombrerol || dto.role || '').toString().toLowerCase();
-    let targetRole: RoleName = RoleName.USER;
+    let targetRole: RoleName;
     if (rawRole.includes('admin')) {
       targetRole = RoleName.ADMIN;
     } else if (rawRole.includes('entrenador') || rawRole.includes('trainer')) {

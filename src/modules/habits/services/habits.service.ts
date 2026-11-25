@@ -61,7 +61,7 @@ export class HabitsService {
       rachaActual: stats.rachaActual,
       mejorRacha: stats.mejorRacha,
       totalCumplido: stats.totalCumplido,
-      tasaExito: tasaExito > 100 ? 100 : tasaExito, // Capped at 100% just in case of multiple completions per day
+      tasaExito: Math.min(100, tasaExito), // Capped at 100% just in case of multiple completions per day
       historialReciente: stats.historialReciente,
     };
   }
@@ -106,12 +106,35 @@ export class HabitsService {
     return created;
   }
 
+  private buildHabitDbUpdates(dto: UpdateHabitDto): Record<string, unknown> {
+    const fieldMap: Array<[keyof UpdateHabitDto, string]> = [
+      ['nombre', 'nombre'],
+      ['descripcion', 'descripcion'],
+      ['fechaFin', 'fechafin'],
+      ['puntos', 'puntos'],
+      ['idCategoria', 'idcategoria'],
+      ['diasSemana', 'dias_semana'],
+      ['metaDiaria', 'meta_diaria'],
+      ['unidadMedida', 'unidad_medida'],
+    ];
+
+    const dbUpdates: Record<string, unknown> = {};
+    for (const [dtoKey, dbKey] of fieldMap) {
+      if (dto[dtoKey] !== undefined) {
+        dbUpdates[dbKey] = dto[dtoKey];
+      }
+    }
+
+    if (dto.estado !== undefined) {
+      const inactiveStates = new Set(['Archivado', 'Pausado', 'Inactivo']);
+      dbUpdates.estado = inactiveStates.has(dto.estado) ? 'Inactivo' : dto.estado;
+    }
+
+    return dbUpdates;
+  }
+
   async update(idHabito: string, dto: UpdateHabitDto, userId: string) {
-    const habito = await this.habitsRepo.findById(idHabito);
-    if (!habito)
-      throw new NotFoundException(`Hábito ${idHabito} no encontrado`);
-    if (habito.idUsuario !== userId)
-      throw new ForbiddenException('Acceso denegado');
+    const habito = await this.findById(idHabito, userId);
 
     // ─── Reglas de negocio ────────────────────────────────────────────────────
     if (habito.estado === 'Completado' && dto.estado === 'Activo') {
@@ -125,24 +148,9 @@ export class HabitsService {
       );
     }
 
-    const dbUpdates: Record<string, unknown> = {};
-    if (dto.nombre !== undefined) dbUpdates.nombre = dto.nombre;
-    if (dto.descripcion !== undefined) dbUpdates.descripcion = dto.descripcion;
-    if (dto.fechaFin !== undefined) dbUpdates.fechafin = dto.fechaFin;
-    if (dto.estado !== undefined) {
-      if (dto.estado === 'Archivado' || dto.estado === 'Pausado' || dto.estado === 'Inactivo') {
-        dbUpdates.estado = 'Inactivo';
-      } else {
-        dbUpdates.estado = dto.estado;
-      }
-    }
-    if (dto.puntos !== undefined) dbUpdates.puntos = dto.puntos;
-    if (dto.idCategoria !== undefined) dbUpdates.idcategoria = dto.idCategoria;
-    if (dto.diasSemana !== undefined) dbUpdates.dias_semana = dto.diasSemana;
-    if (dto.metaDiaria !== undefined) dbUpdates.meta_diaria = dto.metaDiaria;
-    if (dto.unidadMedida !== undefined) dbUpdates.unidad_medida = dto.unidadMedida;
+    const dbUpdates = this.buildHabitDbUpdates(dto);
 
-    if (dto.recordatorios !== undefined && Array.isArray(dto.recordatorios)) {
+    if (Array.isArray(dto.recordatorios)) {
       await this.habitsRepo.syncRecordatorios(idHabito, dto.recordatorios);
     }
 
