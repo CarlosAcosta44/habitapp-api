@@ -37,17 +37,28 @@ export class ReportsService {
     return recordsByDate;
   }
 
-  private evaluateSingleDayForHabit(
-    h: any,
-    currentDate: Date,
-    today: Date,
-    periodStartDate: Date,
-    habDay: number,
-    jsDay: number,
-    completedIds: string[],
-    statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }>,
-    volumenSemanal: number[],
-  ): { scheduled: boolean; completed: boolean; inPeriod: boolean } {
+  private evaluateSingleDayForHabit(ctx: {
+    h: any;
+    currentDate: Date;
+    today: Date;
+    periodStartDate: Date;
+    habDay: number;
+    jsDay: number;
+    completedIds: string[];
+    statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }>;
+    volumenSemanal: number[];
+  }): { scheduled: boolean; completed: boolean; inPeriod: boolean } {
+    const {
+      h,
+      currentDate,
+      today,
+      periodStartDate,
+      habDay,
+      jsDay,
+      completedIds,
+      statsByHabit,
+      volumenSemanal,
+    } = ctx;
     const hStart = new Date(h.fechainicio);
     hStart.setHours(0, 0, 0, 0);
 
@@ -76,6 +87,72 @@ export class ReportsService {
     }
 
     return { scheduled: true, completed: isCompleted, inPeriod };
+  }
+
+  private evaluateAllHabitsOnDate(ctx: {
+    allHabits: any[];
+    currentDate: Date;
+    today: Date;
+    periodStartDate: Date;
+    completedIds: string[];
+    statsByHabit: Record<string, { expected: number; completed: number; currentStreak: number; maxStreak: number }>;
+    volumenSemanal: number[];
+  }): { anyScheduled: boolean; allCompletedForDay: boolean; dayExpectedInPeriod: number; dayCompletedInPeriod: number } {
+    const jsDay = ctx.currentDate.getDay();
+    const habDay = jsDay === 0 ? 7 : jsDay;
+    let allCompletedForDay = true;
+    let anyScheduled = false;
+    let dayExpectedInPeriod = 0;
+    let dayCompletedInPeriod = 0;
+
+    for (const h of ctx.allHabits) {
+      const res = this.evaluateSingleDayForHabit({
+        h,
+        currentDate: ctx.currentDate,
+        today: ctx.today,
+        periodStartDate: ctx.periodStartDate,
+        habDay,
+        jsDay,
+        completedIds: ctx.completedIds,
+        statsByHabit: ctx.statsByHabit,
+        volumenSemanal: ctx.volumenSemanal,
+      });
+      if (!res.scheduled) continue;
+      anyScheduled = true;
+      if (res.inPeriod) {
+        dayExpectedInPeriod++;
+        if (res.completed) dayCompletedInPeriod++;
+      }
+      if (!res.completed) {
+        allCompletedForDay = false;
+      }
+    }
+
+    return { anyScheduled, allCompletedForDay, dayExpectedInPeriod, dayCompletedInPeriod };
+  }
+
+  private updateDailyGlobalStreak(
+    anyScheduled: boolean,
+    allCompletedForDay: boolean,
+    currentDate: Date,
+    today: Date,
+    globalCurrentStreak: number,
+    rachaMaxima: number,
+  ): { globalCurrentStreak: number; rachaMaxima: number } {
+    if (!anyScheduled) {
+      return { globalCurrentStreak, rachaMaxima };
+    }
+    if (allCompletedForDay) {
+      const nextStreak = globalCurrentStreak + 1;
+      return {
+        globalCurrentStreak: nextStreak,
+        rachaMaxima: Math.max(rachaMaxima, nextStreak),
+      };
+    }
+    if (currentDate < today) {
+      return { globalCurrentStreak: 0, rachaMaxima };
+    }
+    return { globalCurrentStreak, rachaMaxima };
   }
 
   private findBestAndWorstHabit(
@@ -133,45 +210,31 @@ export class ReportsService {
 
     while (currentDate <= today) {
       const dStr = currentDate.toISOString().split('T')[0];
-      const jsDay = currentDate.getDay();
-      const habDay = jsDay === 0 ? 7 : jsDay;
       const completedIds = recordsByDate[dStr] || [];
 
-      let allCompletedForDay = true;
-      let anyScheduled = false;
+      const dayEval = this.evaluateAllHabitsOnDate({
+        allHabits,
+        currentDate,
+        today,
+        periodStartDate,
+        completedIds,
+        statsByHabit,
+        volumenSemanal,
+      });
 
-      for (const h of allHabits) {
-        const res = this.evaluateSingleDayForHabit(
-          h,
-          currentDate,
-          today,
-          periodStartDate,
-          habDay,
-          jsDay,
-          completedIds,
-          statsByHabit,
-          volumenSemanal,
-        );
-        if (res.scheduled) {
-          anyScheduled = true;
-          if (res.inPeriod) {
-            totalEsperado++;
-            if (res.completed) totalCumplido++;
-          }
-          if (!res.completed) {
-            allCompletedForDay = false;
-          }
-        }
-      }
+      totalEsperado += dayEval.dayExpectedInPeriod;
+      totalCumplido += dayEval.dayCompletedInPeriod;
 
-      if (anyScheduled) {
-        if (allCompletedForDay) {
-          globalCurrentStreak++;
-          rachaMaxima = Math.max(rachaMaxima, globalCurrentStreak);
-        } else if (currentDate < today) {
-          globalCurrentStreak = 0;
-        }
-      }
+      const streakState = this.updateDailyGlobalStreak(
+        dayEval.anyScheduled,
+        dayEval.allCompletedForDay,
+        currentDate,
+        today,
+        globalCurrentStreak,
+        rachaMaxima,
+      );
+      globalCurrentStreak = streakState.globalCurrentStreak;
+      rachaMaxima = streakState.rachaMaxima;
 
       if (currentDate >= thirtyDaysAgo) {
         consistenciaMes.push({ fecha: dStr, activos: completedIds.length });
