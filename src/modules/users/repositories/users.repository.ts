@@ -15,110 +15,122 @@ export class UsersRepository {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async getUserStats(userId: string) {
-    const client = this.supabaseService.getClient().schema('seguimiento');
-    
-    // Get all habits to compute historical streaks correctly
-    const { data: allHabits, error: err1 } = await client
-      .from('habitos')
-      .select('idhabito, fechainicio, dias_semana, estado')
-      .eq('idusuario', userId);
+  private parseHabitLocalDate(dateStr: string): Date {
+    const [hYear, hMonth, hDay] = dateStr.split('T')[0].split('-').map(Number);
+    const d = new Date(hYear, hMonth - 1, hDay);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
 
-    if (err1) throw new InternalServerErrorException('Error fetch habits');
-    
-    const activeHabits = allHabits ? allHabits.filter(h => h.estado === 'Activo') : [];
-
-    // Get all completed records
-    const { data: records, error: err2 } = await client
-      .schema('seguimiento').from('registro_habitos')
-      .select('idhabito, fecha')
-      .eq('idusuario', userId)
-      .eq('completado', true);
-      
-    if (err2) throw new InternalServerErrorException('Error fetch records');
-
-    const activeHabitsCount = activeHabits ? activeHabits.length : 0;
-    const totalCumplido = records?.length || 0;
-
+  private computeTotalExpectedDays(activeHabits: any[], hoy: Date): number {
     let totalEsperado = 0;
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
-    
-    if (activeHabits) {
-      for (const h of activeHabits) {
-        const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
-        const hStart = new Date(hYear, hMonth - 1, hDay);
-        hStart.setHours(0,0,0,0);
-        const current = new Date(hStart);
-        while (current <= hoy) {
-          const jsDay = current.getDay();
-          const habDay = jsDay === 0 ? 7 : jsDay;
-          if (h.dias_semana.includes(habDay)) totalEsperado++;
-          current.setDate(current.getDate() + 1);
+    for (const h of activeHabits) {
+      const current = this.parseHabitLocalDate(h.fechainicio);
+      while (current <= hoy) {
+        const jsDay = current.getDay();
+        const habDay = jsDay === 0 ? 7 : jsDay;
+        if (h.dias_semana?.includes(habDay)) {
+          totalEsperado++;
         }
+        current.setDate(current.getDate() + 1);
       }
     }
-    const tasaExito = totalEsperado > 0 ? Math.min(100, Math.round((totalCumplido / totalEsperado) * 100)) : 100;
+    return totalEsperado;
+  }
+
+  private groupRecordsByDate(records: any[]): Record<string, string[]> {
+    const recordsByDate: Record<string, string[]> = {};
+    for (const r of records) {
+      if (!recordsByDate[r.fecha]) {
+        recordsByDate[r.fecha] = [];
+      }
+      recordsByDate[r.fecha].push(r.idhabito);
+    }
+    return recordsByDate;
+  }
+
+  private computeCurrentStreak(allHabits: any[], recordsByDate: Record<string, string[]>): number {
+    if (allHabits.length === 0) {
+      return 0;
+    }
+
+    const oldestTime = Math.min(
+      ...allHabits.map((h) => this.parseHabitLocalDate(h.fechainicio).getTime()),
+    );
+    const oldestHabitDate = new Date(oldestTime);
+    oldestHabitDate.setHours(0, 0, 0, 0);
 
     let rachaActual = 0;
-    const recordsByDate: Record<string, string[]> = {};
-    if (records) {
-      for (const r of records) {
-        if (!recordsByDate[r.fecha]) recordsByDate[r.fecha] = [];
-        recordsByDate[r.fecha].push(r.idhabito);
-      }
-    }
-
     const checkDate = new Date();
     let firstCheck = true;
-    while (true) {
+
+    while (checkDate >= oldestHabitDate) {
       const y = checkDate.getFullYear();
       const m = String(checkDate.getMonth() + 1).padStart(2, '0');
       const d = String(checkDate.getDate()).padStart(2, '0');
       const dStr = `${y}-${m}-${d}`;
       const jsDay = checkDate.getDay();
       const habDay = jsDay === 0 ? 7 : jsDay;
-      
-      const scheduledForDay = allHabits?.filter(h => {
-        // Parse YYYY-MM-DD strictly as local time
-        const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
-        const startDate = new Date(hYear, hMonth - 1, hDay);
-        startDate.setHours(0,0,0,0);
-        return checkDate >= startDate && h.dias_semana && h.dias_semana.includes(habDay);
-      }) || [];
-      
+
+      const scheduledForDay = allHabits.filter((h) => {
+        const startDate = this.parseHabitLocalDate(h.fechainicio);
+        return checkDate >= startDate && h.dias_semana?.includes(habDay);
+      });
+
       if (scheduledForDay.length > 0) {
         const completedIds = recordsByDate[dStr] || [];
-        let allCompleted = true;
-        for (const h of scheduledForDay) {
-          if (!completedIds.includes(h.idhabito)) {
-            allCompleted = false;
-            break;
-          }
-        }
-        
+        const allCompleted = scheduledForDay.every((h) => completedIds.includes(h.idhabito));
         if (allCompleted) {
           rachaActual++;
-        } else {
-          if (!firstCheck) break; 
+        } else if (!firstCheck) {
+          break;
         }
       }
-      
+
       checkDate.setDate(checkDate.getDate() - 1);
       firstCheck = false;
-
-      if (allHabits && allHabits.length > 0) {
-        const oldestTime = Math.min(...allHabits.map(h => {
-          const [hYear, hMonth, hDay] = h.fechainicio.split('T')[0].split('-').map(Number);
-          return new Date(hYear, hMonth - 1, hDay).getTime();
-        }));
-        const oldestHabitDate = new Date(oldestTime);
-        oldestHabitDate.setHours(0,0,0,0);
-        if (checkDate < oldestHabitDate) break;
-      } else {
-        break;
-      }
     }
+
+    return rachaActual;
+  }
+
+  async getUserStats(userId: string) {
+    const client = this.supabaseService.getClient().schema('seguimiento');
+
+    const { data: allHabits, error: err1 } = await client
+      .from('habitos')
+      .select('idhabito, fechainicio, dias_semana, estado')
+      .eq('idusuario', userId);
+
+    if (err1) throw new InternalServerErrorException('Error fetch habits');
+
+    const safeAllHabits = allHabits ?? [];
+    const activeHabits = safeAllHabits.filter((h) => h.estado === 'Activo');
+
+    const { data: records, error: err2 } = await client
+      .schema('seguimiento')
+      .from('registro_habitos')
+      .select('idhabito, fecha')
+      .eq('idusuario', userId)
+      .eq('completado', true);
+
+    if (err2) throw new InternalServerErrorException('Error fetch records');
+
+    const safeRecords = records ?? [];
+    const activeHabitsCount = activeHabits.length;
+    const totalCumplido = safeRecords.length;
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const totalEsperado = this.computeTotalExpectedDays(activeHabits, hoy);
+    const tasaExito =
+      totalEsperado > 0
+        ? Math.min(100, Math.round((totalCumplido / totalEsperado) * 100))
+        : 100;
+
+    const recordsByDate = this.groupRecordsByDate(safeRecords);
+    const rachaActual = this.computeCurrentStreak(safeAllHabits, recordsByDate);
 
     return {
       activeHabitsCount,

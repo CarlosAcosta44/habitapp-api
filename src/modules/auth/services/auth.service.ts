@@ -2,7 +2,7 @@
 import { Injectable, UnauthorizedException, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { OAuth2Client } from 'google-auth-library';
 import axios from 'axios';
 import { RegisterDto } from '../dto/register.dto';
@@ -13,7 +13,7 @@ import { MailService } from '../../../core/mail/services/mail.service';
 
 @Injectable()
 export class AuthService {
-  private googleClient: OAuth2Client;
+  private readonly googleClient: OAuth2Client;
 
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
@@ -21,6 +21,17 @@ export class AuthService {
     private readonly mailService: MailService
   ) {
     this.googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy');
+  }
+
+  private resolveUserRole(nombrerol?: string): UserRole {
+    const rawRole = (nombrerol || '').toString().toLowerCase();
+    if (rawRole.includes('admin')) {
+      return UserRole.ADMIN;
+    }
+    if (rawRole.includes('entrenador') || rawRole.includes('trainer')) {
+      return UserRole.TRAINER;
+    }
+    return UserRole.USER;
   }
 
   async register(dto: RegisterDto) {
@@ -49,7 +60,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.userRepository.findByEmail(dto.email);
-    if (!user || !user.password_hash) throw new UnauthorizedException('Credenciales inválidas');
+    if (!user?.password_hash) throw new UnauthorizedException('Credenciales inválidas');
 
     const isValid = await bcrypt.compare(dto.password, user.password_hash);
     if (!isValid) throw new UnauthorizedException('Credenciales inválidas');
@@ -58,12 +69,7 @@ export class AuthService {
       throw new ForbiddenException('Tu cuenta se encuentra suspendida. Contacta al administrador.');
     }
 
-    const rawRole = (user.roles?.nombrerol || '').toString().toLowerCase();
-    const role = rawRole.includes('admin')
-      ? UserRole.ADMIN
-      : rawRole.includes('entrenador') || rawRole.includes('trainer')
-      ? UserRole.TRAINER
-      : UserRole.USER;
+    const role = this.resolveUserRole(user.roles?.nombrerol);
 
     const payload = {
       sub: user.idusuario,
@@ -92,7 +98,7 @@ export class AuthService {
 
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      if (!payload || !payload.sub || payload.token_type !== 'refresh') {
+      if (!payload?.sub || payload.token_type !== 'refresh') {
         throw new UnauthorizedException('Refresh token expirado o inválido');
       }
 
@@ -105,12 +111,7 @@ export class AuthService {
         throw new ForbiddenException('Tu cuenta se encuentra suspendida. Contacta al administrador.');
       }
 
-      const rawRole = (user.roles?.nombrerol || '').toString().toLowerCase();
-      const role = rawRole.includes('admin')
-        ? UserRole.ADMIN
-        : rawRole.includes('entrenador') || rawRole.includes('trainer')
-        ? UserRole.TRAINER
-        : UserRole.USER;
+      const role = this.resolveUserRole(user.roles?.nombrerol);
 
       const accessPayload = {
         sub: user.idusuario,
@@ -136,8 +137,8 @@ export class AuthService {
     }
   }
   
-  async logout(_userId: string) {
-    return { message: 'Sesión terminada' };
+  logout(_userId: string) {
+    return Promise.resolve({ message: 'Sesión terminada' });
   }
 
   // --- OAUTH GOOGLE ---
@@ -148,7 +149,7 @@ export class AuthService {
         audience: process.env.GOOGLE_CLIENT_ID,
       });
       const payload = ticket.getPayload();
-      if (!payload || !payload.email) throw new UnauthorizedException('Token inválido');
+      if (!payload?.email) throw new UnauthorizedException('Token inválido');
       return this.handleOAuthLogin(payload.email, payload.given_name || '', payload.family_name || '');
     } catch {
       throw new UnauthorizedException('Token de Google inválido');
@@ -184,12 +185,7 @@ export class AuthService {
       });
     }
 
-    const rawRole = (user.roles?.nombrerol || '').toString().toLowerCase();
-    const role = rawRole.includes('admin')
-      ? UserRole.ADMIN
-      : rawRole.includes('entrenador') || rawRole.includes('trainer')
-      ? UserRole.TRAINER
-      : UserRole.USER;
+    const role = this.resolveUserRole(user.roles?.nombrerol);
 
     const payload = {
       sub: user.idusuario,

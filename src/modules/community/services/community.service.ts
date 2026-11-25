@@ -67,7 +67,7 @@ export class CommunityService {
   async getForums(accessToken?: string) {
     const data = await this.communityRepository.getForums();
 
-    const userIds = [...new Set(data.map((f: any) => f.idusuario).filter((id: any) => id))];
+    const userIds = [...new Set(data.map((f: any) => f.idusuario).filter(Boolean))];
     if (userIds.length > 0) {
       const usersData = await this.communityRepository.getUsersByIds(userIds as string[]);
       const userMap: any = {};
@@ -106,7 +106,7 @@ export class CommunityService {
   async getCommentsByForumId(forumId: string, accessToken?: string) {
     const data = await this.communityRepository.getCommentsByForumId(forumId);
 
-    const userIds = [...new Set(data.map((c: any) => c.idusuario).filter((id: any) => id))];
+    const userIds = [...new Set(data.map((c: any) => c.idusuario).filter(Boolean))];
     if (userIds.length > 0) {
       const usersData = await this.communityRepository.getUsersByIds(userIds as string[]);
       const userMap: any = {};
@@ -151,7 +151,7 @@ export class CommunityService {
 
   async updateForum(userId: string, forumId: string, updates: { titulo?: string; descripcion?: string; categoria?: string; imagenUrl?: string }) {
     const forumData = await this.communityRepository.getForumOwner(forumId);
-    if (!forumData || forumData.idusuario !== userId) {
+    if (forumData?.idusuario !== userId) {
       throw new UnauthorizedException('No tienes permiso para editar este foro');
     }
     return this.communityRepository.updateForum(forumId, updates);
@@ -159,7 +159,7 @@ export class CommunityService {
 
   async deleteForum(userId: string, forumId: string) {
     const forumData = await this.communityRepository.getForumOwner(forumId);
-    if (!forumData || forumData.idusuario !== userId) {
+    if (forumData?.idusuario !== userId) {
       throw new UnauthorizedException('No tienes permiso para eliminar este foro');
     }
     return this.communityRepository.deleteForum(forumId);
@@ -172,7 +172,7 @@ export class CommunityService {
 
   async updateComment(userId: string, commentId: string, contenido: string, imagenUrl?: string) {
     const commentData = await this.communityRepository.getCommentOwner(commentId);
-    if (!commentData || commentData.idusuario !== userId) {
+    if (commentData?.idusuario !== userId) {
       throw new UnauthorizedException('No tienes permiso para editar este comentario');
     }
     return this.communityRepository.updateComment(commentId, contenido, imagenUrl);
@@ -180,7 +180,7 @@ export class CommunityService {
 
   async deleteComment(userId: string, commentId: string) {
     const commentData = await this.communityRepository.getCommentOwner(commentId);
-    if (!commentData || commentData.idusuario !== userId) {
+    if (commentData?.idusuario !== userId) {
       throw new UnauthorizedException('No tienes permiso para eliminar este comentario');
     }
     return this.communityRepository.deleteComment(commentId);

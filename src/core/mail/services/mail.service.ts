@@ -4,11 +4,11 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
-  private resend: Resend;
-  private fromEmail: string;
-  private frontendUrl: string;
+  private readonly resend: Resend;
+  private readonly fromEmail: string;
+  private readonly frontendUrl: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     const apiKey =
       this.configService.get<string>('RESEND_API_KEY') ||
       're_dummy_key_for_dev';

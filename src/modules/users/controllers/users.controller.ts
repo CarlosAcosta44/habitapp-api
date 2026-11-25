@@ -131,7 +131,7 @@ export class UsersController {
     @Req() req: any,
   ) {
     let token = null;
-    if (req.cookies && req.cookies['access_token']) {
+    if (req.cookies?.['access_token']) {
       token = req.cookies['access_token'];
     } else if (req.headers.authorization) {
       const authHeader = req.headers.authorization;
