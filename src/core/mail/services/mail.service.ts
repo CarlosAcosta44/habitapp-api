@@ -1,62 +1,129 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
   private readonly resend: Resend;
+  private readonly smtpTransporter: Transporter | null;
+  private readonly gmailUser: string;
   private readonly fromEmail: string;
   private readonly frontendUrl: string;
 
   constructor(private readonly configService: ConfigService) {
+    this.gmailUser =
+      this.configService.get<string>('GMAIL_USER') || 'habitapp296@gmail.com';
+    const gmailAppPassword = (
+      this.configService.get<string>('GMAIL_APP_PASSWORD') || ''
+    )
+      .replaceAll(/\s+/g, '')
+      .trim();
+
+    if (this.gmailUser && gmailAppPassword) {
+      this.smtpTransporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: this.gmailUser,
+          pass: gmailAppPassword,
+        },
+      });
+    } else {
+      this.smtpTransporter = null;
+    }
+
     const apiKey =
       this.configService.get<string>('RESEND_API_KEY') ||
       're_dummy_key_for_dev';
     this.resend = new Resend(apiKey);
     this.fromEmail =
-      this.configService.get<string>('MAIL_FROM') || 'noreply@habitapp.io';
+      this.configService.get<string>('MAIL_FROM') || this.gmailUser;
     this.frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
   }
 
-  async sendVerificationEmail(email: string, token: string) {
-    const verificationUrl = `${this.frontendUrl}/auth/verify-email?token=${token}`;
+  private async deliverEmail(to: string, subject: string, html: string) {
+    if (this.smtpTransporter) {
+      try {
+        await this.smtpTransporter.sendMail({
+          from: `"HabitApp" <${this.gmailUser}>`,
+          to,
+          subject,
+          html,
+        });
+        this.logger.log(`Correo enviado vía Gmail SMTP a ${to}`);
+        return;
+      } catch (smtpError) {
+        const err = smtpError as Error;
+        this.logger.error(
+          `Error al enviar correo vía Gmail SMTP a ${to}: ${err.message}`,
+        );
+      }
+    }
 
     try {
       await this.resend.emails.send({
         from: `HabitApp <${this.fromEmail}>`,
-        to: email,
-        subject: 'Verifica tu cuenta en HabitApp',
-        html: `
-          <h1>¡Bienvenido a HabitApp!</h1>
-          <p>Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p>
-          <a href="${verificationUrl}">${verificationUrl}</a>
-          <p>Si no creaste esta cuenta, puedes ignorar este correo.</p>
-        `,
+        to,
+        subject,
+        html,
       });
     } catch (error) {
-      console.error('Failed to send verification email', error);
-      // Log errors but don't fail the request completely for missing keys
+      const err = error as Error;
+      this.logger.error(`Error al enviar correo a ${to}: ${err.message}`);
     }
   }
 
-  async sendPasswordResetEmail(email: string, token: string) {
-    const resetUrl = `${this.frontendUrl}/auth/reset-password?token=${token}`;
+  async sendVerificationEmail(email: string, token: string) {
+    const verificationUrl = `${this.frontendUrl}/auth/verify-email?token=${encodeURIComponent(token)}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 16px;">
+        <h1 style="color: #572de4; font-size: 22px;">¡Bienvenido a HabitApp!</h1>
+        <p>Por favor, haz clic en el siguiente enlace para verificar tu correo electrónico:</p>
+        <p style="margin: 24px 0;">
+          <a href="${verificationUrl}" style="background-color: #572de4; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block;">
+            Verificar mi correo
+          </a>
+        </p>
+        <p style="font-size: 13px; color: #64748b;">Si no creaste esta cuenta, puedes ignorar este correo.</p>
+      </div>
+    `;
+    await this.deliverEmail(email, 'Verifica tu cuenta en HabitApp', html);
+  }
 
-    try {
-      await this.resend.emails.send({
-        from: `HabitApp <${this.fromEmail}>`,
-        to: email,
-        subject: 'Recuperación de contraseña',
-        html: `
-          <h1>Recuperación de Contraseña</h1>
-          <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace:</p>
-          <a href="${resetUrl}">${resetUrl}</a>
-          <p>Si no solicitaste esto, puedes ignorar este correo de forma segura.</p>
-        `,
-      });
-    } catch (error) {
-      console.error('Failed to send reset email', error);
-    }
+  async sendPasswordResetEmail(email: string, token: string) {
+    const resetUrl = `${this.frontendUrl}/update-password?token=${encodeURIComponent(token)}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 16px;">
+        <h1 style="color: #572de4; font-size: 22px; margin-bottom: 12px;">Recuperación de Contraseña — HabitApp</h1>
+        <p style="font-size: 14px; line-height: 1.6;">
+          Has solicitado restablecer tu contraseña en <strong>HabitApp</strong>. Haz clic en el siguiente botón para crear una nueva contraseña (el enlace es válido por 15 minutos):
+        </p>
+        <p style="margin: 24px 0; text-align: center;">
+          <a href="${resetUrl}" style="background-color: #572de4; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">
+            Restablecer mi contraseña
+          </a>
+        </p>
+        <p style="font-size: 13px; color: #475569; margin-top: 20px;">
+          <strong>¿Estás desde la App Móvil o quieres ingresar el código manualmente?</strong><br/>
+          Copia y pega el siguiente token de recuperación en la pantalla de cambio de contraseña:
+        </p>
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; word-break: break-all; color: #0f172a; border: 1px solid #cbd5e1;">
+          ${token}
+        </div>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 24px;">
+          Si no solicitaste este cambio, puedes ignorar este correo de forma segura.
+        </p>
+      </div>
+    `;
+    await this.deliverEmail(
+      email,
+      'Recuperación de contraseña — HabitApp',
+      html,
+    );
   }
 }
