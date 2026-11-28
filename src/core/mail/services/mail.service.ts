@@ -98,25 +98,22 @@ export class MailService {
   async sendPasswordResetEmail(email: string, token: string) {
     const resetUrl = `${this.frontendUrl}/update-password?token=${encodeURIComponent(token)}`;
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 16px;">
-        <h1 style="color: #572de4; font-size: 22px; margin-bottom: 12px;">Recuperación de Contraseña — HabitApp</h1>
-        <p style="font-size: 14px; line-height: 1.6;">
-          Has solicitado restablecer tu contraseña en <strong>HabitApp</strong>. Haz clic en el siguiente botón para crear una nueva contraseña (el enlace es válido por 15 minutos):
+      <div lang="es" style="font-family: Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 28px; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+        <h1 style="color: #572de4; font-size: 22px; margin-top: 0; margin-bottom: 16px;">Recuperación de Contraseña — HabitApp</h1>
+        <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+          Hola, recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>HabitApp</strong>.
         </p>
-        <p style="margin: 24px 0; text-align: center;">
-          <a href="${resetUrl}" style="background-color: #572de4; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">
+        <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+          Haz clic en el siguiente botón para crear tu nueva contraseña (este enlace es válido durante <strong>15 minutos</strong>):
+        </p>
+        <p style="margin: 28px 0; text-align: center;">
+          <a href="${resetUrl}" style="background-color: #572de4; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 15px; display: inline-block;">
             Restablecer mi contraseña
           </a>
         </p>
-        <p style="font-size: 13px; color: #475569; margin-top: 20px;">
-          <strong>¿Estás desde la App Móvil o quieres ingresar el código manualmente?</strong><br/>
-          Copia y pega el siguiente token de recuperación en la pantalla de cambio de contraseña:
-        </p>
-        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 12px; word-break: break-all; color: #0f172a; border: 1px solid #cbd5e1;">
-          ${token}
-        </div>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 24px;">
-          Si no solicitaste este cambio, puedes ignorar este correo de forma segura.
+        <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">
+          Si no solicitaste este cambio, puedes ignorar este correo de forma segura y tu contraseña seguirá siendo la misma.
         </p>
       </div>
     `;
